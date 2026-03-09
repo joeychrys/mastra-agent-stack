@@ -1,0 +1,15 @@
+volumes:
+  mastra_postgres_data:
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: mastra_local_postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - mastra_postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=betterstarter
