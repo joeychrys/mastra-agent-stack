@@ -1,0 +1,73 @@
+name: Production Build and Deploy
+
+# Runs when a version tag is pushed - builds, pushes, and deploys to production
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./dokploy/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # NEXT_PUBLIC_* vars are NOT passed here - they use placeholders
+          # that get replaced at runtime via entrypoint.sh from Dokploy env vars
+          build-args: |
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
+            POLAR_ACCESS_TOKEN=${{ secrets.POLAR_ACCESS_TOKEN }}
+            POLAR_WEBHOOK_SECRET=${{ secrets.POLAR_WEBHOOK_SECRET }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }}
+
+      - name: Trigger Dokploy Deployment
+        run: |
+          curl -X POST \
+            "https://${{ secrets.DOKPLOY_URL }}/api/application.deploy" \
+            -H 'accept: application/json' \
+            -H "x-api-key: ${{ secrets.DOKPLOY_API_KEY }}" \
+            -H 'Content-Type: application/json' \
+            -d '{"applicationId": "${{ secrets.DOKPLOY_APP_ID }}"}'

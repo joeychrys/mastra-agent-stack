@@ -1,0 +1,77 @@
+name: PR Validation
+
+# Runs on pull requests to master - validates code quality and build
+on:
+  pull_request:
+    branches: ['master']
+    paths:
+      - 'next-app/**'
+      - 'dokploy/**'
+      - 'scripts/**'
+      - '.github/workflows/pr-validation.yml'
+
+jobs:
+  # Fast checks - lint, format, type check
+  lint-and-format:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./next-app
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: './next-app/pnpm-lock.yaml'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        run: pnpm lint
+
+      - name: Check Prettier formatting
+        run: pnpm format:check
+
+  # Docker build validation - runs in parallel with lint
+  build-validation:
+    name: Docker Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (validation only - no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./dokploy/Dockerfile
+          push: false
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # NEXT_PUBLIC_* vars use placeholders - replaced at runtime
+          # Server-side vars can be dummy values for build validation
+          build-args: |
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
+            POLAR_ACCESS_TOKEN=${{ secrets.POLAR_ACCESS_TOKEN }}
+            POLAR_WEBHOOK_SECRET=${{ secrets.POLAR_WEBHOOK_SECRET }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }}

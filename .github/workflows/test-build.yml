@@ -1,0 +1,35 @@
+name: Test Build
+
+# Manually triggered - builds the Docker image without pushing or deploying
+on:
+  workflow_dispatch:
+
+jobs:
+  test-build:
+    name: Docker Build (Test)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./dokploy/Dockerfile
+          push: false
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
+            POLAR_ACCESS_TOKEN=${{ secrets.POLAR_ACCESS_TOKEN }}
+            POLAR_WEBHOOK_SECRET=${{ secrets.POLAR_WEBHOOK_SECRET }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }}

@@ -13,8 +13,8 @@
 SHELL := /bin/bash
 
 # Directories
-BACKEND  := mastra-backend
-FRONTEND := next-frontend
+BACKEND  := agents
+FRONTEND := next-app
 
 # ──────────────────────────────────────────────────────────────
 # Setup
@@ -40,8 +40,8 @@ install-frontend: ## Install frontend dependencies only
 
 .PHONY: setup
 setup: install ## First-time setup: install deps + copy env files
-	@[ -f $(FRONTEND)/.env ] || (cp $(FRONTEND)/.env.example $(FRONTEND)/.env && echo "Created $(FRONTEND)/.env — add your OPENAI_API_KEY")
-	@[ -f $(BACKEND)/.env ] || echo "Note: create $(BACKEND)/.env with your model provider API keys"
+	@[ -f $(FRONTEND)/.env ] || (cp $(FRONTEND)/.env.example $(FRONTEND)/.env && echo "Created $(FRONTEND)/.env — add your API keys")
+	@[ -f $(BACKEND)/.env ] || (cp $(BACKEND)/.env.example $(BACKEND)/.env && echo "Created $(BACKEND)/.env — add your model provider API keys")
 
 # ──────────────────────────────────────────────────────────────
 # Docker / Database
@@ -63,6 +63,26 @@ db-reset: ## Reset PostgreSQL (destroy volume and restart)
 .PHONY: db-logs
 db-logs: ## Tail PostgreSQL logs
 	docker compose logs -f postgres
+
+# ──────────────────────────────────────────────────────────────
+# Drizzle (database migrations)
+# ──────────────────────────────────────────────────────────────
+
+.PHONY: db-migrate
+db-migrate: ## Run Drizzle migrations (frontend)
+	cd $(FRONTEND) && pnpm db:migrate
+
+.PHONY: db-push
+db-push: ## Push Drizzle schema to database (frontend)
+	cd $(FRONTEND) && pnpm db:push
+
+.PHONY: db-generate
+db-generate: ## Generate Drizzle migration files (frontend)
+	cd $(FRONTEND) && pnpm db:generate
+
+.PHONY: db-studio
+db-studio: ## Open Drizzle Studio (frontend)
+	cd $(FRONTEND) && pnpm db:studio
 
 # ──────────────────────────────────────────────────────────────
 # Development servers

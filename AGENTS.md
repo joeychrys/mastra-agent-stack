@@ -6,12 +6,19 @@ Guidance for AI coding agents working in this monorepo.
 
 This is a two-project monorepo (no workspace manager — each project has independent dependencies):
 
-| Directory          | Description                                      | Runtime       |
-| ------------------ | ------------------------------------------------ | ------------- |
-| `mastra-backend/`  | Mastra AI agent framework backend (TypeScript)   | Node >= 22.13 |
-| `next-frontend/`   | Next.js 16 chat UI with assistant-ui (React 19)  | Node >= 18    |
+| Directory   | Description                                      | Runtime       |
+| ----------- | ------------------------------------------------ | ------------- |
+| `agents/`   | Mastra AI agent framework backend (TypeScript)   | Node >= 22.13 |
+| `next-app/` | Next.js 16 app with assistant-ui chat (React 19) | Node >= 18    |
 
-A root `docker-compose.yml` provides a local PostgreSQL 16 instance (`localhost:5432`, user/password/db: `user`/`password`/`betterstarter`).
+A root `docker-compose.yml` provides a local PostgreSQL 16 instance (`localhost:5432`, user/password: `user`/`password`) with **two databases**:
+
+| Database     | Used by                                | Connection string                                  |
+| ------------ | -------------------------------------- | -------------------------------------------------- |
+| `mastra`     | `agents/` (Mastra storage)             | `postgresql://user:password@localhost:5432/mastra`     |
+| `betterauth` | `next-app/` (Better Auth + Drizzle ORM) | `postgresql://user:password@localhost:5432/betterauth` |
+
+The second database (`betterauth`) is created automatically by `scripts/init-databases.sh` on first container startup.
 
 A root `package.json` manages shared dev tooling (Husky, lint-staged, Biome).
 
@@ -27,6 +34,11 @@ make dev                 # start db + backend + frontend (all at once)
 make dev-backend         # start backend only (Mastra Studio at localhost:4111)
 make dev-frontend        # start frontend only (Next.js dev server)
 make stop                # stop Docker services
+make db-migrate          # run Drizzle migrations (next-app)
+make db-push             # push Drizzle schema to database (next-app)
+make db-generate         # generate Drizzle migration files (next-app)
+make db-studio           # open Drizzle Studio (next-app)
+make db-reset            # reset PostgreSQL (destroy volume and restart)
 make lint                # lint entire repo
 make lint-fix            # lint + auto-fix entire repo
 make typecheck           # type-check both projects
@@ -44,10 +56,10 @@ npx biome check .        # lint + format check across entire repo
 npx biome check --write .  # lint + format with auto-fix across entire repo
 ```
 
-### mastra-backend
+### agents
 
 ```bash
-cd mastra-backend
+cd agents
 npm install              # install dependencies
 npm run dev              # start Mastra Studio at localhost:4111
 npm run build            # production build (mastra build)
@@ -61,18 +73,22 @@ npx tsc --noEmit         # type-check
 
 No test framework is configured. If tests are added, prefer Vitest with ES modules.
 
-### next-frontend
+### next-app
 
 ```bash
-cd next-frontend
+cd next-app
 pnpm install             # install dependencies (uses pnpm)
 pnpm dev                 # dev server with Turbopack
 pnpm build               # production build
 pnpm start               # start production server
-pnpm lint                # lint all files (biome check .)
-pnpm lint:fix            # lint and auto-fix (biome check --write .)
-pnpm format              # check formatting (biome format .)
-pnpm format:fix          # auto-format (biome format --write .)
+pnpm lint                # lint (eslint)
+pnpm lint:fix            # lint and auto-fix (eslint --fix)
+pnpm format              # auto-format (prettier --write)
+pnpm format:check        # check formatting (prettier --check)
+pnpm db:migrate          # run Drizzle migrations
+pnpm db:push             # push schema to database
+pnpm db:generate         # generate migration files
+pnpm db:studio           # open Drizzle Studio
 npx tsc --noEmit         # type-check
 ```
 
@@ -81,8 +97,9 @@ No test framework is configured. If tests are added, prefer Vitest.
 ### Docker (shared)
 
 ```bash
-docker compose up -d     # start PostgreSQL
+docker compose up -d     # start PostgreSQL (creates both databases on first run)
 docker compose down      # stop PostgreSQL
+docker compose down -v   # stop + destroy volume (use make db-reset to also restart)
 ```
 
 ## Pre-commit Hooks
@@ -103,12 +120,58 @@ Only staged files are checked, so commits are fast. If Biome finds unfixable err
 
 ## Environment Variables
 
-- `mastra-backend/.env` — `DATABASE_URL` (PostgreSQL connection string) + API keys for model providers
-- `next-frontend/.env` — copy from `.env.example`; requires `OPENAI_API_KEY`
+- `agents/.env` — `DATABASE_URL` (points to `mastra` database) + API keys for model providers
+- `next-app/.env` — `DATABASE_URL` (points to `betterauth` database) + Better Auth secrets + OAuth credentials
+
+Both have `.env.example` files. Run `make setup` to copy them automatically.
 
 Never commit `.env` files. They are gitignored.
 
-## Code Style — mastra-backend
+## Frontend Route Structure (next-app)
+
+The Next.js app uses **route groups** to provide different layouts for different sections:
+
+```
+src/app/
+  layout.tsx              # root layout: html/body shell, ThemeProvider, Providers (no NavBar)
+  globals.css             # Tailwind v4 + tw-animate-css, OKLCH theme, shimmer animation
+  api/                    # API routes (auth, etc.)
+  (auth)/                 # auth pages (sign-in, sign-up, reset-password) — no NavBar
+    layout.tsx            # centered container + Toaster
+  (main)/                 # main app pages — has NavBar
+    layout.tsx            # NavBar + flex wrapper
+    page.tsx              # home page
+    account/
+    admin/
+    dashboard/
+    pricing/
+    payment/
+    goodbye/
+  (chat)/                 # chat interface — full-viewport, no NavBar
+    layout.tsx            # ChatProviders (QueryClientProvider) + TooltipProvider
+    chat/
+      page.tsx
+      assistant.tsx        # AssistantRuntimeProvider + SidebarProvider + Thread
+      components/
+        assistant-ui/      # thread, sidebar, markdown, reasoning, attachment, etc.
+        tools/             # tool-specific UI (weather-tool-ui, etc.)
+      lib/
+        mastra-api.ts      # API client for Mastra backend
+        mastra-thread-adapter.ts  # thread list + history adapters
+        providers.tsx      # ChatProviders (chat-specific QueryClientProvider)
+        query-client.ts    # singleton QueryClient for chat
+      hooks/
+        use-threads.ts     # TanStack Query hooks for threads
+        use-messages.ts    # TanStack Query hooks for messages
+```
+
+**Key layout rules:**
+- Route groups (`(main)`, `(chat)`, `(auth)`) don't affect URLs
+- The root layout has NO NavBar — each route group adds its own chrome
+- The `(chat)` layout uses a dedicated `QueryClient` singleton shared between React hooks and the thread adapter (both import from `chat/lib/query-client.ts`)
+- Chat components use **relative imports** for files within `chat/` and `@/` aliases only for shared UI components (`@/components/ui/*`) and utilities (`@/lib/utils`)
+
+## Code Style — agents
 
 ### Language & Module System
 - TypeScript with `strict: true`, target ES2022, ESM (`"type": "module"`)
@@ -159,15 +222,17 @@ import { weatherTool } from '../tools/weather-tool';
 - Config via single options object — no positional arguments
 - Module-private helpers (unexported functions)
 
-## Code Style — next-frontend
+## Code Style — next-app
 
 ### Language & Module System
 - TypeScript with `strict: true`, JSX react-jsx, ESM
-- Biome for linting and formatting (no ESLint or Prettier)
+- ESLint + Prettier for linting and formatting
+- Biome is used at the repo root level (pre-commit hooks)
 
 ### Imports
 - Named imports predominant; `import type` for type-only imports
-- Path alias `@/*` maps to project root: `@/lib/utils`, `@/components/ui/button`
+- Path alias `@/*` maps to `src/`: `@/lib/utils`, `@/components/ui/button`
+- **Chat route exception:** files under `src/app/(chat)/chat/` use **relative imports** for other chat files and `@/` aliases only for shared components (`@/components/ui/*`, `@/lib/utils`)
 - `import * as React from "react"` in shadcn/ui components
 - `import { useState, memo } from "react"` in assistant-ui components
 - Default imports only for Next.js conventions (`next/link`) and config files
@@ -210,7 +275,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 - Multi-component files: single `export { A, B, C }` block at file bottom (shadcn/ui style)
 
 ### Styling
-- Tailwind CSS v4 with `@import "tailwindcss"` syntax
+- Tailwind CSS v4 with `@import "tailwindcss"` and `@import "tw-animate-css"` syntax
 - OKLCH color system with CSS custom properties for theming (light/dark)
 - `data-slot` attributes on shadcn/ui components for external styling hooks
 - Tailwind v4 features: container queries (`@container`), custom property functions (`w-(--sidebar-width)`)
@@ -219,6 +284,13 @@ import { cva, type VariantProps } from "class-variance-authority";
 - React Context for sidebar state (hand-rolled provider + hook pattern)
 - Zustand via `@assistant-ui/react` with `useShallow` for selector memoization
 - assistant-ui runtime pattern: `useChatRuntime` + `AssistantRuntimeProvider`
+- TanStack Query for server state (threads, messages) with chat-specific `QueryClient` singleton
+
+### Authentication
+- Better Auth with Drizzle adapter (`better-auth/adapters/drizzle`)
+- Server-side: `auth.api.getSession()` with `headers()` from `next/headers`
+- Client-side: `authClient.useSession()` from `@/lib/auth-client`
+- Auth pages live in `(auth)/` route group (no NavBar)
 
 ## General Rules
 
@@ -230,3 +302,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 6. Use `cn()` for all Tailwind class merging in the frontend
 7. Add `"use client"` only when a component uses hooks or browser APIs
 8. Pre-commit hooks auto-run Biome on staged files; run `npx tsc --noEmit` in each project to verify types before committing
+9. Chat route files use relative imports for intra-chat references; `@/` aliases only for shared UI
+10. The chat route has its own `QueryClient` singleton — both React hooks and the thread adapter must use the same instance
+11. After changing the database schema, run `make db-generate` then `make db-migrate`
+12. After a fresh clone or `make db-reset`, run `make db-migrate` to set up the `betterauth` database tables

@@ -1,0 +1,22 @@
+version: 2
+updates:
+  # Configure npm for the Next.js application
+  - package-ecosystem: "npm"
+    directory: "/next-app"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 20
+    versioning-strategy: auto
+    labels:
+      - "dependencies"
+      - "npm"
+    
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 20
+    labels:
+      - "dependencies"
+      - "github-actions" 
