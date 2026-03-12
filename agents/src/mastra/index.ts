@@ -9,6 +9,7 @@ import {
 } from "@mastra/observability";
 import { PostgresStore } from "@mastra/pg";
 import { weatherAgent } from "./agents/weather-agent";
+import { JwksAuth } from "./auth/jwks-auth";
 import { UsageLogger } from "./processors/usage-logger";
 import {
   completenessScorer,
@@ -26,6 +27,7 @@ export const mastra = new Mastra({
     connectionString: process.env.DATABASE_URL!,
   }),
   server: {
+    auth: new JwksAuth(),
     apiRoutes: [
       chatRoute({
         path: "/chat/:agentId",
@@ -34,8 +36,8 @@ export const mastra = new Mastra({
     cors: {
       origin: ["http://localhost:3000"],
       allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowHeaders: ["*"],
-      credentials: false,
+      allowHeaders: ["Content-Type", "Authorization", "x-mastra-client-type"],
+      credentials: true,
     },
   },
   logger: new PinoLogger({
