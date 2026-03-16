@@ -10,6 +10,7 @@ import {
 } from "@mastra/observability";
 import { PostgresStore } from "@mastra/pg";
 import { createRemoteJWKSet, jwtVerify } from "jose";
+import { summarizerAgent } from "./agents/summarizer-agent";
 import { weatherAgent } from "./agents/weather-agent";
 import { UsageLogger } from "./processors/usage-logger";
 import {
@@ -26,7 +27,7 @@ const jwks = jwksUrl ? createRemoteJWKSet(new URL(jwksUrl)) : null;
 
 export const mastra = new Mastra({
   workflows: { weatherWorkflow },
-  agents: { weatherAgent },
+  agents: { weatherAgent, summarizerAgent },
   scorers: { toolCallAppropriatenessScorer, completenessScorer, translationScorer },
   storage: new PostgresStore({
     id: "mastra-storage",
@@ -74,7 +75,7 @@ export const mastra = new Mastra({
     ],
     cors: {
       origin: ["http://localhost:3000"],
-      allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       allowHeaders: ["*"],
       credentials: true,
     },

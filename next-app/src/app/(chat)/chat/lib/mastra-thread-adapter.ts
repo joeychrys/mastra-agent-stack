@@ -3,12 +3,15 @@ import type {
   ThreadHistoryAdapter,
 } from '@assistant-ui/react';
 import { toAISdkV5Messages } from '@mastra/ai-sdk/ui';
+import { createAssistantStream } from 'assistant-stream';
+import { getAuthToken } from '../hooks/use-auth-token';
 import {
   createThread,
   deleteThread,
   fetchThread,
   fetchThreadMessages,
   listThreads,
+  MASTRA_BASE_URL,
   renameThread,
   threadKeys,
 } from './mastra-api';
@@ -145,13 +148,70 @@ export function createMastraThreadAdapter(): RemoteThreadListAdapter {
       queryClient.removeQueries({ queryKey: threadKeys.messages(threadId) });
     },
 
-    async generateTitle(_threadId: string, _messages: readonly unknown[]) {
-      // Return an empty ReadableStream — we don't auto-generate titles
-      return new ReadableStream({
-        start(c) {
-          c.close();
+    async generateTitle(threadId: string, messages: readonly unknown[]) {
+      // Extract the first user message text to summarize as a title.
+      // ThreadMessage.content is an array of parts (e.g. TextMessagePart[]),
+      // so we need to pull the text from each { type: "text", text: "..." } part.
+      type MessageLike = {
+        role?: string;
+        content?: string | ReadonlyArray<{ type?: string; text?: string }>;
+      };
+      const firstUserMsg = (messages as MessageLike[]).find((m) => m.role === 'user');
+      const rawContent = firstUserMsg?.content;
+      const textToSummarize =
+        typeof rawContent === 'string'
+          ? rawContent
+          : Array.isArray(rawContent)
+            ? rawContent
+                .filter((p) => p.type === 'text' && p.text)
+                .map((p) => p.text)
+                .join(' ')
+            : '';
+
+      if (!textToSummarize) {
+        return createAssistantStream((controller) => {
+          controller.close();
+        });
+      }
+
+      // Call the summarizer agent to generate an 8-word-or-less title
+      const token = await getAuthToken();
+      const res = await fetch(`${MASTRA_BASE_URL}/api/agents/summarizerAgent/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
-      }) as never;
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: textToSummarize }],
+        }),
+      });
+
+      if (!res.ok) {
+        return createAssistantStream((controller) => {
+          controller.close();
+        });
+      }
+
+      const data = (await res.json()) as { text?: string };
+      const title = data.text?.trim() ?? 'New Chat';
+
+      // Persist the title and invalidate caches (non-blocking — don't prevent
+      // the AssistantStream from being returned even if rename fails)
+      renameThread(threadId, title)
+        .then(() => {
+          void queryClient.invalidateQueries({ queryKey: threadKeys.list() });
+          void queryClient.invalidateQueries({ queryKey: threadKeys.detail(threadId) });
+        })
+        .catch(() => {
+          // Rename failed — title will still show in the UI via the stream
+        });
+
+      // Return an AssistantStream so the thread list UI updates
+      return createAssistantStream((controller) => {
+        controller.appendText(title);
+        controller.close();
+      });
     },
   };
 }
