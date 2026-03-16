@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronsUpDown, LogOut, MessagesSquare, Settings, User } from 'lucide-react';
+import { ChevronsUpDown, LogOut, Settings, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type * as React from 'react';
@@ -9,7 +9,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -49,25 +48,12 @@ export function ThreadListSidebar({ ...props }: React.ComponentProps<typeof Side
 
   return (
     <Sidebar {...props}>
-      <SidebarHeader className="aui-sidebar-header mb-2 border-b">
-        <div className="aui-sidebar-header-content flex items-center justify-between">
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild>
-                <Link href="/">
-                  <div className="aui-sidebar-header-icon-wrapper bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                    <MessagesSquare className="aui-sidebar-header-icon size-4" />
-                  </div>
-                  <div className="aui-sidebar-header-heading mr-6 flex flex-col gap-0.5 leading-none">
-                    <span className="aui-sidebar-header-title font-semibold">Chat</span>
-                  </div>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </div>
+      <SidebarHeader className="aui-sidebar-header px-4 pt-4 pb-0">
+        <Link href="/" className="text-lg tracking-tight">
+          Chat
+        </Link>
       </SidebarHeader>
-      <SidebarContent className="aui-sidebar-content px-2">
+      <SidebarContent className="aui-sidebar-content px-2 pt-2">
         <ThreadList />
       </SidebarContent>
       <SidebarRail />
@@ -94,20 +80,6 @@ export function ThreadListSidebar({ ...props }: React.ComponentProps<typeof Side
                 align="start"
                 className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
               >
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                    <Avatar className="size-8 rounded-lg">
-                      <AvatarFallback className="rounded-lg">{userInitial}</AvatarFallback>
-                    </Avatar>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-semibold">{user?.name ?? 'Guest'}</span>
-                      <span className="text-muted-foreground truncate text-xs">
-                        {user?.email ?? ''}
-                      </span>
-                    </div>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/account/profile">
                     <User className="mr-2 size-4" />
