@@ -23,7 +23,12 @@ import { ThreadListSidebar } from './components/assistant-ui/threadlist-sidebar'
 import { WeatherToolUI } from './components/tools/weather-tool-ui';
 import { getAuthToken } from './hooks/use-auth-token';
 import { RESOURCE_ID } from './lib/mastra-api';
-import { createMastraHistoryAdapter, createMastraThreadAdapter } from './lib/mastra-thread-adapter';
+import {
+  createMastraHistoryAdapter,
+  createMastraThreadAdapter,
+  resolveThreadId,
+  resolveThreadIdAsync,
+} from './lib/mastra-thread-adapter';
 
 const MASTRA_CHAT_URL = 'http://localhost:4111/chat/weatherAgent';
 
@@ -39,17 +44,20 @@ function useMastraChatThreadRuntime() {
           return { Authorization: `Bearer ${token}` };
         },
         prepareSendMessagesRequest: async (options) => {
+          // Await the pending initialize() if it's in flight — there is a
+          // race condition where this callback fires before the adapter's
+          // createThread() completes.
+          const resolved = await resolveThreadIdAsync(threadId);
           return {
             ...options,
             body: {
               ...options.body,
-              id: options.id,
               messages: options.messages,
               trigger: options.trigger,
               messageId: options.messageId,
               metadata: options.requestMetadata,
               memory: {
-                thread: threadId,
+                thread: resolved,
                 resource: RESOURCE_ID,
               },
             },
@@ -64,7 +72,8 @@ function useMastraChatThreadRuntime() {
     transport,
   });
 
-  const historyAdapter = useMemo(() => createMastraHistoryAdapter(threadId), [threadId]);
+  const resolvedId = resolveThreadId(threadId);
+  const historyAdapter = useMemo(() => createMastraHistoryAdapter(resolvedId), [resolvedId]);
 
   return useAISDKRuntime(chat, {
     adapters: { history: historyAdapter },

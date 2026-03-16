@@ -15,6 +15,47 @@ import {
 import { queryClient } from './query-client';
 
 // ---------------------------------------------------------------------------
+// Local → remote thread ID resolution
+// ---------------------------------------------------------------------------
+// assistant-ui assigns temporary IDs like `__LOCALID_xxx` to new threads.
+// The adapter's `initialize()` creates the real server-side thread, but due
+// to a race condition the transport's `prepareSendMessagesRequest` callback
+// can fire BEFORE `initialize()` completes (the AssistantChatTransport
+// relies on `this.runtime` which may not be set yet).
+//
+// To handle this we store the *pending* initialization promise so that
+// `resolveThreadIdAsync()` can await it before resolving the ID.
+// ---------------------------------------------------------------------------
+
+/** Completed mappings: localId → remoteId */
+const threadIdMap = new Map<string, string>();
+
+/** In-flight initialization promises: localId → Promise<remoteId> */
+const pendingInits = new Map<string, Promise<string>>();
+
+/**
+ * Synchronous resolve — returns the remote UUID if already known,
+ * otherwise falls back to the input.  Use for non-critical paths
+ * (e.g. history adapter creation during render).
+ */
+export function resolveThreadId(threadId: string): string {
+  return threadIdMap.get(threadId) ?? threadId;
+}
+
+/**
+ * Async resolve — if an `initialize()` is in flight for this local ID,
+ * awaits it first so the caller always gets the real remote UUID.
+ * Use inside `prepareSendMessagesRequest` to guarantee correctness.
+ */
+export async function resolveThreadIdAsync(threadId: string): Promise<string> {
+  const pending = pendingInits.get(threadId);
+  if (pending) {
+    return pending;
+  }
+  return threadIdMap.get(threadId) ?? threadId;
+}
+
+// ---------------------------------------------------------------------------
 // Thread list adapter — backed by TanStack Query cache
 // ---------------------------------------------------------------------------
 
@@ -35,12 +76,34 @@ export function createMastraThreadAdapter(): RemoteThreadListAdapter {
       };
     },
 
-    async initialize(_threadId: string) {
-      const thread = await createThread();
-      // Invalidate the list so new thread shows up immediately
+    async initialize(localThreadId: string) {
+      // Guard: already completed
+      const existing = threadIdMap.get(localThreadId);
+      if (existing) {
+        return { remoteId: existing, externalId: undefined };
+      }
+
+      // Guard: already in-flight (runtime may call initialize() repeatedly)
+      const inflight = pendingInits.get(localThreadId);
+      if (inflight) {
+        const remoteId = await inflight;
+        return { remoteId, externalId: undefined };
+      }
+
+      // Create the server-side thread and store a promise so that
+      // concurrent callers (e.g. prepareSendMessagesRequest) can await it.
+      const promise = createThread().then((thread) => {
+        threadIdMap.set(localThreadId, thread.id);
+        pendingInits.delete(localThreadId);
+        return thread.id;
+      });
+      pendingInits.set(localThreadId, promise);
+
+      const remoteId = await promise;
+      // Invalidate the list so the new thread shows up immediately
       void queryClient.invalidateQueries({ queryKey: threadKeys.list() });
       return {
-        remoteId: thread.id,
+        remoteId,
         externalId: undefined,
       };
     },

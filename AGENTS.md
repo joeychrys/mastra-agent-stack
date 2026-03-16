@@ -292,6 +292,33 @@ import { cva, type VariantProps } from "class-variance-authority";
 - Client-side: `authClient.useSession()` from `@/lib/auth-client`
 - Auth pages live in `(auth)/` route group (no NavBar)
 
+## Known Issues & Workarounds
+
+### Thread ID Race Condition (assistant-ui + Mastra Memory)
+
+**Files:** `next-app/src/app/(chat)/chat/lib/mastra-thread-adapter.ts`, `next-app/src/app/(chat)/chat/assistant.tsx`
+
+When using `assistant-ui`'s `unstable_useRemoteThreadListRuntime` with Mastra's Memory-backed agents, there is a **race condition** during new thread creation that causes duplicate threads with `__LOCALID_*` IDs to appear in the Mastra database.
+
+**Root cause:** `assistant-ui` generates temporary local IDs (e.g. `__LOCALID_kdrN6JW`) for new threads before they are persisted server-side. The `AssistantChatTransport` is supposed to call `initialize()` (which creates the real server thread) and await the result before sending the first message. However, `AssistantChatTransport` relies on `this.runtime` being set (via `setRuntime()`), which happens in a React effect **after** render. On the first message send, `this.runtime` is `undefined`, so `await this.runtime?.threads.mainItem.initialize()` resolves to `undefined` immediately. The transport's `prepareSendMessagesRequest` callback then fires **before** the adapter's `createThread()` completes, sending the raw `__LOCALID_*` value to the Mastra backend.
+
+The Mastra agent's Memory system auto-creates a thread for any unknown thread ID it receives, so a thread with the literal ID `__LOCALID_kdrN6JW` ends up in the database. Meanwhile, `initialize()` also creates a proper UUID thread via `POST /api/memory/threads`, resulting in **two threads** per conversation.
+
+**How the fix works (do not remove or simplify):**
+
+1. **`mastra-thread-adapter.ts` stores pending initialization promises** in a module-level `pendingInits` Map. When `initialize()` is called, it stores the `createThread()` promise keyed by the local ID before awaiting it. This allows concurrent callers to await the same promise.
+
+2. **`assistant.tsx` uses `resolveThreadIdAsync()`** in `prepareSendMessagesRequest` instead of a synchronous lookup. This function checks `pendingInits` for an in-flight promise and awaits it, guaranteeing the UUID is available before the request body is constructed.
+
+3. **`id: options.id` is deliberately omitted from the request body.** The `options.id` value comes from `useChat({ id: threadId })` and is always the `__LOCALID_*` placeholder. Only `memory.thread` (with the resolved UUID) should reach the Mastra backend.
+
+4. **`initialize()` is guarded against repeated calls.** The `RemoteThreadListThreadListRuntimeCore` never clears its internal `newThreadId`, so it may call `adapter.initialize()` on every message send. The adapter checks both `threadIdMap` (completed) and `pendingInits` (in-flight) to avoid creating duplicate server threads.
+
+**If you see `__LOCALID_*` threads in the Mastra database**, the race condition fix has been broken. Check that:
+- `prepareSendMessagesRequest` uses `await resolveThreadIdAsync(threadId)`, not `resolveThreadId(threadId)`
+- The request body does NOT include `id: options.id`
+- `initialize()` stores its promise in `pendingInits` before awaiting
+
 ## General Rules
 
 1. Never commit secrets or `.env` files
