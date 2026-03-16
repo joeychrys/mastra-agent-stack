@@ -1,9 +1,10 @@
-import type { JwtPayload } from "@mastra/auth";
-import { verifyJwks } from "@mastra/auth";
 import type { MastraAuthProviderOptions } from "@mastra/core/server";
 import { MastraAuthProvider } from "@mastra/core/server";
+import { createRemoteJWKSet, type JWTPayload, jwtVerify } from "jose";
 
-type JwksUser = JwtPayload;
+interface JwksUser extends JWTPayload {
+  id: string;
+}
 
 interface JwksAuthOptions extends MastraAuthProviderOptions<JwksUser> {
   jwksUrl?: string;
@@ -15,6 +16,7 @@ export class JwksAuth extends MastraAuthProvider<JwksUser> {
   protected jwksUrl: string;
   protected issuer: string;
   protected audience: string;
+  private jwks: ReturnType<typeof createRemoteJWKSet>;
 
   constructor(options?: JwksAuthOptions) {
     super({ name: options?.name ?? "jwks-auth" });
@@ -32,23 +34,23 @@ export class JwksAuth extends MastraAuthProvider<JwksUser> {
     this.jwksUrl = jwksUrl;
     this.issuer = issuer ?? "";
     this.audience = audience ?? "";
+    this.jwks = createRemoteJWKSet(new URL(this.jwksUrl));
 
     this.registerOptions(options);
   }
 
   async authenticateToken(token: string): Promise<JwksUser | null> {
     try {
-      const payload = await verifyJwks(token, this.jwksUrl);
+      const { payload } = await jwtVerify(token, this.jwks, {
+        issuer: this.issuer || undefined,
+        audience: this.audience || undefined,
+      });
 
-      if (this.issuer && payload.iss !== this.issuer) {
+      if (!payload.sub) {
         return null;
       }
 
-      if (this.audience && payload.aud !== this.audience) {
-        return null;
-      }
-
-      return payload;
+      return { ...payload, id: payload.sub };
     } catch {
       return null;
     }

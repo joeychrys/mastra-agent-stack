@@ -20,7 +20,7 @@ A root `docker-compose.yml` provides a local PostgreSQL 16 instance (`localhost:
 
 The second database (`betterauth`) is created automatically by `scripts/init-databases.sh` on first container startup.
 
-A root `package.json` manages shared dev tooling (Husky, lint-staged, Biome).
+A root `package.json` manages shared dev tooling (Husky, lint-staged, Biome). All three projects use **pnpm** as their package manager.
 
 A root `Makefile` provides convenient shortcuts — run `make help` to see all targets.
 
@@ -51,24 +51,24 @@ make nuke                # full reset (clean + remove deps + stop Docker)
 ### Root (shared tooling)
 
 ```bash
-npm install              # install Husky, lint-staged, Biome (also initializes git hooks)
-npx biome check .        # lint + format check across entire repo
-npx biome check --write .  # lint + format with auto-fix across entire repo
+pnpm install             # install Husky, lint-staged, Biome (also initializes git hooks)
+pnpm biome check .       # lint + format check across entire repo
+pnpm biome check --write .  # lint + format with auto-fix across entire repo
 ```
 
 ### agents
 
 ```bash
 cd agents
-npm install              # install dependencies
-npm run dev              # start Mastra Studio at localhost:4111
-npm run build            # production build (mastra build)
-npm run start            # start production server (mastra start)
-npm run lint             # lint all files (biome check .)
-npm run lint:fix         # lint and auto-fix (biome check --write .)
-npm run format           # check formatting (biome format .)
-npm run format:fix       # auto-format (biome format --write .)
-npx tsc --noEmit         # type-check
+pnpm install             # install dependencies
+pnpm dev                 # start Mastra Studio at localhost:4111
+pnpm build               # production build (mastra build)
+pnpm start               # start production server (mastra start)
+pnpm lint                # lint all files (biome check .)
+pnpm lint:fix            # lint and auto-fix (biome check --write .)
+pnpm format              # check formatting (biome format .)
+pnpm format:fix          # auto-format (biome format --write .)
+pnpm tsc --noEmit        # type-check
 ```
 
 No test framework is configured. If tests are added, prefer Vitest with ES modules.
@@ -89,7 +89,7 @@ pnpm db:migrate          # run Drizzle migrations
 pnpm db:push             # push schema to database
 pnpm db:generate         # generate migration files
 pnpm db:studio           # open Drizzle Studio
-npx tsc --noEmit         # type-check
+pnpm tsc --noEmit        # type-check
 ```
 
 No test framework is configured. If tests are added, prefer Vitest.
@@ -301,7 +301,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 5. Prefer named exports; reserve default exports for Next.js pages/layouts/config
 6. Use `cn()` for all Tailwind class merging in the frontend
 7. Add `"use client"` only when a component uses hooks or browser APIs
-8. Pre-commit hooks auto-run Biome on staged files; run `npx tsc --noEmit` in each project to verify types before committing
+8. Pre-commit hooks auto-run Biome on staged files; run `pnpm tsc --noEmit` in each project to verify types before committing
 9. Chat route files use relative imports for intra-chat references; `@/` aliases only for shared UI
 10. The chat route has its own `QueryClient` singleton — both React hooks and the thread adapter must use the same instance
 11. After changing the database schema, run `make db-generate` then `make db-migrate`

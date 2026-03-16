@@ -21,10 +21,11 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/s
 import { Thread } from './components/assistant-ui/thread';
 import { ThreadListSidebar } from './components/assistant-ui/threadlist-sidebar';
 import { WeatherToolUI } from './components/tools/weather-tool-ui';
+import { getAuthToken } from './hooks/use-auth-token';
+import { RESOURCE_ID } from './lib/mastra-api';
 import { createMastraHistoryAdapter, createMastraThreadAdapter } from './lib/mastra-thread-adapter';
 
 const MASTRA_CHAT_URL = 'http://localhost:4111/chat/weatherAgent';
-const RESOURCE_ID = 'weather-agent';
 
 function useMastraChatThreadRuntime() {
   const threadId = useAuiState((s) => s.threadListItem.id);
@@ -33,6 +34,10 @@ function useMastraChatThreadRuntime() {
     () =>
       new AssistantChatTransport({
         api: MASTRA_CHAT_URL,
+        headers: async () => {
+          const token = await getAuthToken();
+          return { Authorization: `Bearer ${token}` };
+        },
         prepareSendMessagesRequest: async (options) => {
           return {
             ...options,

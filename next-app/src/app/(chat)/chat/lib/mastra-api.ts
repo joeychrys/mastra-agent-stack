@@ -3,11 +3,16 @@
  * No React — safe to use in hooks, adapters, or server code.
  */
 
+import { getAuthToken } from '../hooks/use-auth-token';
+
 const MASTRA_BASE_URL = 'http://localhost:4111';
-const RESOURCE_ID = 'poopman';
 const AGENT_ID = 'weather-agent';
 
-export { MASTRA_BASE_URL, RESOURCE_ID, AGENT_ID };
+// Placeholder — the server overrides this with the authenticated user's ID
+// via MASTRA_RESOURCE_ID_KEY middleware, but the API schema still requires it.
+const RESOURCE_ID = 'authenticated-user';
+
+export { MASTRA_BASE_URL, AGENT_ID, RESOURCE_ID };
 
 // ---------------------------------------------------------------------------
 // Types
@@ -31,14 +36,16 @@ export type MastraThreadListResponse = {
 };
 
 // ---------------------------------------------------------------------------
-// Generic fetch helper
+// Generic fetch helper (automatically injects JWT Bearer token)
 // ---------------------------------------------------------------------------
 
 export async function mastraFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = await getAuthToken();
   const res = await fetch(`${MASTRA_BASE_URL}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
       ...options?.headers,
     },
   });
@@ -96,8 +103,14 @@ export async function deleteThread(threadId: string): Promise<void> {
  * `toAISdkV5Messages()`.
  */
 export async function fetchThreadMessages(threadId: string): Promise<Record<string, unknown>[]> {
+  const token = await getAuthToken();
   const res = await fetch(
-    `${MASTRA_BASE_URL}/api/memory/threads/${threadId}/messages?agentId=${AGENT_ID}`
+    `${MASTRA_BASE_URL}/api/memory/threads/${threadId}/messages?agentId=${AGENT_ID}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
   );
   if (!res.ok) return [];
   const data = (await res.json()) as {

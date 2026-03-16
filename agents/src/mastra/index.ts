@@ -1,5 +1,6 @@
 import { chatRoute } from "@mastra/ai-sdk";
 import { Mastra } from "@mastra/core/mastra";
+import { MASTRA_RESOURCE_ID_KEY } from "@mastra/core/request-context";
 import { PinoLogger } from "@mastra/loggers";
 import {
   CloudExporter,
@@ -8,8 +9,8 @@ import {
   SensitiveDataFilter,
 } from "@mastra/observability";
 import { PostgresStore } from "@mastra/pg";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 import { weatherAgent } from "./agents/weather-agent";
-import { JwksAuth } from "./auth/jwks-auth";
 import { UsageLogger } from "./processors/usage-logger";
 import {
   completenessScorer,
@@ -17,6 +18,11 @@ import {
   translationScorer,
 } from "./scorers/weather-scorer";
 import { weatherWorkflow } from "./workflows/weather-workflow";
+
+const jwksUrl = process.env.JWKS_URL;
+const jwtIssuer = process.env.JWT_ISSUER;
+const jwtAudience = process.env.JWT_AUDIENCE;
+const jwks = jwksUrl ? createRemoteJWKSet(new URL(jwksUrl)) : null;
 
 export const mastra = new Mastra({
   workflows: { weatherWorkflow },
@@ -27,7 +33,40 @@ export const mastra = new Mastra({
     connectionString: process.env.DATABASE_URL!,
   }),
   server: {
-    auth: new JwksAuth(),
+    middleware: [
+      {
+        handler: async (c, next) => {
+          if (!jwks) {
+            return new Response("JWKS not configured", { status: 500 });
+          }
+
+          const authHeader = c.req.header("Authorization");
+          if (!authHeader?.startsWith("Bearer ")) {
+            return new Response("Unauthorized", { status: 401 });
+          }
+
+          const token = authHeader.slice(7);
+          try {
+            const { payload } = await jwtVerify(token, jwks, {
+              issuer: jwtIssuer || undefined,
+              audience: jwtAudience || undefined,
+            });
+
+            if (!payload.sub) {
+              return new Response("Unauthorized", { status: 401 });
+            }
+
+            const requestContext = c.get("requestContext");
+            requestContext.set(MASTRA_RESOURCE_ID_KEY, payload.sub);
+          } catch {
+            return new Response("Invalid or expired token", { status: 401 });
+          }
+
+          await next();
+        },
+        path: "*",
+      },
+    ],
     apiRoutes: [
       chatRoute({
         path: "/chat/:agentId",
@@ -36,7 +75,7 @@ export const mastra = new Mastra({
     cors: {
       origin: ["http://localhost:3000"],
       allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowHeaders: ["Content-Type", "Authorization", "x-mastra-client-type"],
+      allowHeaders: ["*"],
       credentials: true,
     },
   },
@@ -48,14 +87,8 @@ export const mastra = new Mastra({
     configs: {
       default: {
         serviceName: "mastra",
-        exporters: [
-          new DefaultExporter(), // Persists traces to storage for Mastra Studio
-          new CloudExporter(), // Sends traces to Mastra Cloud (if MASTRA_CLOUD_ACCESS_TOKEN is set)
-        ],
-        spanOutputProcessors: [
-          new SensitiveDataFilter(), // Redacts sensitive data like passwords, tokens, keys
-          new UsageLogger(), // Logs token usage per model generation to the terminal
-        ],
+        exporters: [new DefaultExporter(), new CloudExporter()],
+        spanOutputProcessors: [new SensitiveDataFilter(), new UsageLogger()],
       },
     },
   }),

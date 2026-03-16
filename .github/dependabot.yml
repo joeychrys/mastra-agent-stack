@@ -1,6 +1,28 @@
 version: 2
 updates:
-  # Configure npm for the Next.js application
+  # Root dev tooling (Husky, lint-staged, Biome)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    versioning-strategy: auto
+    labels:
+      - "dependencies"
+      - "root"
+
+  # Mastra AI agent backend
+  - package-ecosystem: "npm"
+    directory: "/agents"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    versioning-strategy: auto
+    labels:
+      - "dependencies"
+      - "agents"
+
+  # Next.js frontend application
   - package-ecosystem: "npm"
     directory: "/next-app"
     schedule:
@@ -9,9 +31,9 @@ updates:
     versioning-strategy: auto
     labels:
       - "dependencies"
-      - "npm"
-    
-  # Enable version updates for GitHub Actions
+      - "next-app"
+
+  # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -19,4 +41,4 @@ updates:
     open-pull-requests-limit: 20
     labels:
       - "dependencies"
-      - "github-actions" 
+      - "github-actions"
