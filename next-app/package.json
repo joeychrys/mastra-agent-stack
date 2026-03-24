@@ -110,7 +110,7 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "dotenv-cli": "^11.0.0",
-    "drizzle-kit": "^0.31.8",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.1",
     "eslint-config-next": "16.0.6",
     "eslint-config-prettier": "^10.1.8",
