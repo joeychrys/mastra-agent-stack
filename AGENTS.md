@@ -9,9 +9,9 @@ Two independent projects (no workspace manager). Package manager: **pnpm**.
 | Directory   | Description                                 | Runtime       |
 | ----------- | ------------------------------------------- | ------------- |
 | `agents/`   | Mastra AI agent backend (TypeScript, ESM)   | Node >= 22.13 |
-| `next-app/` | Next.js 16 + assistant-ui chat (React 19)   | Node >= 18    |
+| `web/`      | Next.js 16 + assistant-ui chat (React 19)   | Node >= 18    |
 
-Root `docker-compose.yml` runs PostgreSQL 16 (`localhost:5432`, `user`/`password`) with two databases: `mastra` (agents) and `betterauth` (next-app). Root `Makefile` has shortcuts — run `make help`.
+Root `docker-compose.yml` runs PostgreSQL 16 (`localhost:5432`, `user`/`password`) with two databases: `mastra` (agents) and `betterauth` (web). Root `Makefile` has shortcuts — run `make help`.
 
 ## Commands
 
@@ -30,7 +30,7 @@ No test framework configured. If added, use Vitest with ESM.
 
 Mastra structure: `src/mastra/` entry point. Subdirs: `agents/`, `tools/`, `workflows/`, `scorers/`, `mcp/`.
 
-### next-app/
+### web/
 
 ```bash
 pnpm install          # install deps
@@ -62,7 +62,7 @@ make db-reset         # destroy + restart PostgreSQL
 
 Husky + lint-staged runs `biome check --write` on staged `.ts/.tsx/.js/.jsx` and `biome format --write` on `.json`. Skip: `git commit --no-verify`.
 
-Environment: `agents/.env` and `next-app/.env` (both have `.env.example`). Never commit `.env` files.
+Environment: `agents/.env` and `web/.env` (both have `.env.example`). Never commit `.env` files.
 
 ## Formatting (Biome — shared root config)
 
@@ -96,7 +96,7 @@ import { weatherTool } from "../tools/weather-tool";
 
 **Patterns:** Factory functions (`createTool()`, `createStep()`, `new Agent()`). Fluent workflow chaining (`.then().then().commit()`). Config via single options object.
 
-## Code Style — next-app/
+## Code Style — web/
 
 TypeScript `strict: true`, JSX react-jsx. ESLint + Prettier for linting/formatting.
 
@@ -125,7 +125,7 @@ import type { FC } from "react";
 
 ### Thread ID Race Condition (assistant-ui + Mastra Memory)
 
-**Files:** `next-app/src/app/(chat)/chat/lib/mastra-thread-adapter.ts`, `next-app/src/app/(chat)/chat/assistant.tsx`
+**Files:** `web/src/app/(chat)/chat/lib/mastra-thread-adapter.ts`, `web/src/app/(chat)/chat/assistant.tsx`
 
 When using `assistant-ui`'s `unstable_useRemoteThreadListRuntime` with Mastra Memory, a race condition during new thread creation causes duplicate threads with `__LOCALID_*` IDs in the database.
 

@@ -7,7 +7,7 @@ A full-stack AI agent application with a Mastra-powered backend and a Next.js ch
 | Directory   | Description                                    | Key Tech                                      |
 | ----------- | ---------------------------------------------- | --------------------------------------------- |
 | `agents/`   | Mastra AI agent backend                        | Mastra, TypeScript, Zod, PostgreSQL           |
-| `next-app/` | Next.js web app with chat UI                   | Next.js 16, React 19, assistant-ui, Tailwind v4 |
+| `web/`      | Next.js web app with chat UI                   | Next.js 16, React 19, assistant-ui, Tailwind v4 |
 
 A shared `docker-compose.yml` runs a local PostgreSQL 16 instance with two databases:
 
@@ -28,7 +28,7 @@ make setup
 
 # 2. Add your API keys
 #    - agents/.env       → OPENAI_API_KEY
-#    - next-app/.env     → BETTER_AUTH_SECRET, Google OAuth creds, etc.
+#    - web/.env          → BETTER_AUTH_SECRET, Google OAuth creds, etc.
 
 # 3. Start everything (PostgreSQL + backend + frontend)
 make dev
@@ -51,7 +51,7 @@ make dev-backend     # backend only (Mastra Studio)
 make dev-frontend    # frontend only (Next.js)
 make stop            # stop Docker services
 make db-reset        # destroy and recreate PostgreSQL volume
-make db-migrate      # run Drizzle migrations (next-app)
+make db-migrate      # run Drizzle migrations (web)
 make lint            # lint entire repo
 make lint-fix        # lint + auto-fix
 make typecheck       # type-check both projects
@@ -75,10 +75,10 @@ agents/src/mastra/
   auth/             # JWT/JWKS auth integration
 ```
 
-### Frontend (`next-app/`)
+### Frontend (`web/`)
 
 ```
-next-app/src/app/
+web/src/app/
   (auth)/           # Sign-in, sign-up, reset-password (no nav)
   (main)/           # Home, dashboard, account, admin, pricing, payment
   (chat)/chat/      # Full-viewport AI chat interface
@@ -104,7 +104,7 @@ Both projects have `.env.example` files. `make setup` copies them automatically.
 | `JWT_ISSUER`     | JWT issuer URL                 |
 | `JWT_AUDIENCE`   | JWT audience URL               |
 
-**`next-app/.env`**
+**`web/.env`**
 
 | Variable              | Purpose                              |
 | --------------------- | ------------------------------------ |
@@ -124,12 +124,12 @@ Both projects have `.env.example` files. `make setup` copies them automatically.
 cd agents && pnpm dev
 
 # Frontend only
-cd next-app && pnpm dev
+cd web && pnpm dev
 ```
 
 ### Database Migrations
 
-After changing the Drizzle schema in `next-app`:
+After changing the Drizzle schema in `web`:
 
 ```bash
 make db-generate    # generate migration files

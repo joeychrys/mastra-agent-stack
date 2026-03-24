@@ -24,14 +24,14 @@ updates:
 
   # Next.js frontend application
   - package-ecosystem: "npm"
-    directory: "/next-app"
+    directory: "/web"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 20
     versioning-strategy: auto
     labels:
       - "dependencies"
-      - "next-app"
+      - "web"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"

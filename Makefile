@@ -14,7 +14,7 @@ SHELL := /bin/bash
 
 # Directories
 BACKEND  := agents
-FRONTEND := next-app
+FRONTEND := web
 
 # ──────────────────────────────────────────────────────────────
 # Setup

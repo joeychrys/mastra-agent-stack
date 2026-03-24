@@ -11,14 +11,14 @@ FROM base AS deps
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
-COPY ./next-app/package.json ./next-app/pnpm-lock.yaml* ./
+COPY ./web/package.json ./web/pnpm-lock.yaml* ./
 RUN pnpm install --frozen-lockfile
 
 # 2. Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY ./next-app ./
+COPY ./web ./
 
 # Build-time environment variables
 # NEXT_PUBLIC_* use placeholder URLs that get replaced at runtime by entrypoint.sh
