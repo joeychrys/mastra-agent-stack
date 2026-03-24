@@ -1,10 +1,11 @@
 name: PR Validation
 
-# Runs on pull requests to master - validates code quality and build
+# Runs on pull requests to main - validates code quality and build
 on:
   pull_request:
-    branches: ['master']
+    branches: ['main']
     paths:
+      - 'agents/**'
       - 'next-app/**'
       - 'deploy/**'
       - 'scripts/**'
