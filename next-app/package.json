@@ -33,7 +33,7 @@
     "@better-fetch/fetch": "1.1.18",
     "@hookform/resolvers": "^5.2.2",
     "@libsql/client": "^0.15.15",
-    "@mastra/ai-sdk": "^1.1.2",
+    "@mastra/ai-sdk": "^1.2.0",
     "@neondatabase/serverless": "^1.0.2",
     "@polar-sh/better-auth": "^1.5.0",
     "@polar-sh/sdk": "^0.41.5",
