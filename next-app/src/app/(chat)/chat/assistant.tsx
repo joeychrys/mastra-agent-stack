@@ -21,10 +21,16 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/s
 import { Thread } from './components/assistant-ui/thread';
 import { ThreadListSidebar } from './components/assistant-ui/threadlist-sidebar';
 import { WeatherToolUI } from './components/tools/weather-tool-ui';
-import { createMastraHistoryAdapter, createMastraThreadAdapter } from './lib/mastra-thread-adapter';
+import { getAuthToken } from './hooks/use-auth-token';
+import { RESOURCE_ID } from './lib/mastra-api';
+import {
+  createMastraHistoryAdapter,
+  createMastraThreadAdapter,
+  resolveThreadId,
+  resolveThreadIdAsync,
+} from './lib/mastra-thread-adapter';
 
 const MASTRA_CHAT_URL = 'http://localhost:4111/chat/weatherAgent';
-const RESOURCE_ID = 'weather-agent';
 
 function useMastraChatThreadRuntime() {
   const threadId = useAuiState((s) => s.threadListItem.id);
@@ -33,18 +39,25 @@ function useMastraChatThreadRuntime() {
     () =>
       new AssistantChatTransport({
         api: MASTRA_CHAT_URL,
+        headers: async () => {
+          const token = await getAuthToken();
+          return { Authorization: `Bearer ${token}` };
+        },
         prepareSendMessagesRequest: async (options) => {
+          // Await the pending initialize() if it's in flight — there is a
+          // race condition where this callback fires before the adapter's
+          // createThread() completes.
+          const resolved = await resolveThreadIdAsync(threadId);
           return {
             ...options,
             body: {
               ...options.body,
-              id: options.id,
               messages: options.messages,
               trigger: options.trigger,
               messageId: options.messageId,
               metadata: options.requestMetadata,
               memory: {
-                thread: threadId,
+                thread: resolved,
                 resource: RESOURCE_ID,
               },
             },
@@ -59,7 +72,8 @@ function useMastraChatThreadRuntime() {
     transport,
   });
 
-  const historyAdapter = useMemo(() => createMastraHistoryAdapter(threadId), [threadId]);
+  const resolvedId = resolveThreadId(threadId);
+  const historyAdapter = useMemo(() => createMastraHistoryAdapter(resolvedId), [resolvedId]);
 
   return useAISDKRuntime(chat, {
     adapters: { history: historyAdapter },
@@ -87,12 +101,8 @@ export const Assistant = () => {
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink
-                      href="https://www.assistant-ui.com/docs/getting-started"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Build Your Own ChatGPT UX
+                    <BreadcrumbLink href="/agents" target="_blank" rel="noopener noreferrer">
+                      Agents
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="hidden md:block" />

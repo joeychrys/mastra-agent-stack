@@ -20,7 +20,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./dokploy/Dockerfile
+          file: ./deploy/Dockerfile
           push: false
           platforms: linux/amd64
           cache-from: type=gha

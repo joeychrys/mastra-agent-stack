@@ -45,7 +45,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./dokploy/Dockerfile
+          file: ./deploy/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -53,7 +53,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           # NEXT_PUBLIC_* vars are NOT passed here - they use placeholders
-          # that get replaced at runtime via entrypoint.sh from Dokploy env vars
+          # that get replaced at runtime via entrypoint.sh from deploy env vars
           build-args: |
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}

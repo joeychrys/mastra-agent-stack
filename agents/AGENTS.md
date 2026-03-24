@@ -19,7 +19,7 @@ Use these commands to interact with the project.
 ### Installation
 
 ```bash
-npm install
+pnpm install
 ```
 
 ### Development
@@ -27,7 +27,7 @@ npm install
 Start the Mastra Studio at localhost:4111 by running the `dev` script:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 ### Build
@@ -35,7 +35,7 @@ npm run dev
 In order to build a production-ready server, run the `build` script:
 
 ```bash
-npm run build
+pnpm build
 ```
 
 ## Project Structure
@@ -60,7 +60,7 @@ Top-level files define how your Mastra project is configured, built, and connect
 | --------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `src/mastra/index.ts` | Central entry point where you configure and initialize Mastra.                                                    |
 | `.env.example`        | Template for environment variables - copy and rename to `.env` to add your secret [model provider](/models) keys. |
-| `package.json`        | Defines project metadata, dependencies, and available npm scripts.                                                |
+| `package.json`        | Defines project metadata, dependencies, and available scripts.                                                    |
 | `tsconfig.json`       | Configures TypeScript options such as path aliases, compiler settings, and build output.                          |
 
 ## Mastra Skills

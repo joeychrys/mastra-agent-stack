@@ -31,10 +31,10 @@ export default async function NavBar() {
             Home
           </Link>
           <Link
-            href="/dashboard"
+            href="/agents"
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
-            Dashboard
+            Agents
           </Link>
           <Link
             href="/pricing"

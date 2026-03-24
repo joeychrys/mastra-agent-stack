@@ -22,17 +22,17 @@ FRONTEND := next-app
 
 .PHONY: install
 install: ## Install all dependencies (root, backend, frontend)
-	npm install
-	cd $(BACKEND) && npm install
+	pnpm install
+	cd $(BACKEND) && pnpm install
 	cd $(FRONTEND) && pnpm install
 
 .PHONY: install-root
 install-root: ## Install root dependencies only (Husky, lint-staged, Biome)
-	npm install
+	pnpm install
 
 .PHONY: install-backend
 install-backend: ## Install backend dependencies only
-	cd $(BACKEND) && npm install
+	cd $(BACKEND) && pnpm install
 
 .PHONY: install-frontend
 install-frontend: ## Install frontend dependencies only
@@ -93,13 +93,13 @@ dev: ## Start everything: database + backend + frontend (parallel)
 	@$(MAKE) db-up
 	@echo "Starting backend and frontend..."
 	@trap 'kill 0' EXIT; \
-		(cd $(BACKEND) && npm run dev) & \
+		(cd $(BACKEND) && pnpm dev) & \
 		(cd $(FRONTEND) && pnpm dev) & \
 		wait
 
 .PHONY: dev-backend
 dev-backend: ## Start backend only (Mastra Studio at localhost:4111)
-	cd $(BACKEND) && npm run dev
+	cd $(BACKEND) && pnpm dev
 
 .PHONY: dev-frontend
 dev-frontend: ## Start frontend only (Next.js dev server)
@@ -117,7 +117,7 @@ build: build-backend build-frontend ## Build both projects
 
 .PHONY: build-backend
 build-backend: ## Build backend (mastra build)
-	cd $(BACKEND) && npm run build
+	cd $(BACKEND) && pnpm build
 
 .PHONY: build-frontend
 build-frontend: ## Build frontend (next build)
@@ -129,19 +129,19 @@ build-frontend: ## Build frontend (next build)
 
 .PHONY: lint
 lint: ## Lint entire repo (Biome check)
-	npx biome check .
+	pnpm biome check .
 
 .PHONY: lint-fix
 lint-fix: ## Lint + auto-fix entire repo
-	npx biome check --write .
+	pnpm biome check --write .
 
 .PHONY: format
 format: ## Check formatting across entire repo
-	npx biome format .
+	pnpm biome format .
 
 .PHONY: format-fix
 format-fix: ## Auto-format entire repo
-	npx biome format --write .
+	pnpm biome format --write .
 
 # ──────────────────────────────────────────────────────────────
 # Type checking
@@ -152,11 +152,11 @@ typecheck: typecheck-backend typecheck-frontend ## Type-check both projects
 
 .PHONY: typecheck-backend
 typecheck-backend: ## Type-check backend
-	cd $(BACKEND) && npx tsc --noEmit
+	cd $(BACKEND) && pnpm tsc --noEmit
 
 .PHONY: typecheck-frontend
 typecheck-frontend: ## Type-check frontend
-	cd $(FRONTEND) && npx tsc --noEmit
+	cd $(FRONTEND) && pnpm tsc --noEmit
 
 # ──────────────────────────────────────────────────────────────
 # Quality (run before committing)
