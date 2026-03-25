@@ -97,7 +97,7 @@ const AttachmentThumb: FC = () => {
         alt="Attachment preview"
         className="aui-attachment-tile-image object-cover"
       />
-      <AvatarFallback delayMs={isImage ? 200 : 0}>
+      <AvatarFallback delay={isImage ? 200 : 0}>
         <FileText className="aui-attachment-tile-fallback-icon text-muted-foreground size-8" />
       </AvatarFallback>
     </Avatar>
