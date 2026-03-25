@@ -1,0 +1,32 @@
+# Dependencies
+**/node_modules
+
+# Build outputs
+**/.mastra
+**/.next
+**/.turbo
+**/dist
+
+# Environment & secrets
+**/.env
+**/.env.*
+!**/.env.example
+
+# Version control
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+**/.DS_Store
+
+# Docs & config not needed in builds
+*.md
+!deploy/README.md
+LICENSE
+.husky
+.changeset
+biome.json
+turbo.json
+Makefile

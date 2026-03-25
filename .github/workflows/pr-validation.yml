@@ -45,8 +45,8 @@ jobs:
         run: pnpm --filter @repo/web typecheck
 
   # Docker build validation - runs in parallel with lint
-  build-validation:
-    name: Docker Build
+  build-validation-web:
+    name: Docker Build (Web)
     runs-on: ubuntu-latest
 
     steps:
@@ -60,11 +60,11 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./deploy/Dockerfile
+          file: ./deploy/web/Dockerfile
           push: false
           platforms: linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
           # NEXT_PUBLIC_* vars use placeholders - replaced at runtime
           # Server-side vars can be dummy values for build validation
           build-args: |
@@ -75,3 +75,24 @@ jobs:
             GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
             BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }}
+
+  build-validation-agents:
+    name: Docker Build (Agents)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (validation only - no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./deploy/agents/Dockerfile
+          push: false
+          platforms: linux/amd64
+          cache-from: type=gha,scope=agents
+          cache-to: type=gha,mode=max,scope=agents

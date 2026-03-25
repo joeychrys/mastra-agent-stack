@@ -26,7 +26,7 @@ COPY apps/web ./apps/web
 # These must be valid URLs because Next.js validates them during static generation
 # The PLACEHOLDER_REPLACE_ME string is what gets swapped out at container start
 ENV NEXT_PUBLIC_BASE_URL=https://PLACEHOLDER_REPLACE_ME_BASE_URL
-ENV NEXT_PUBLIC_LANGGRAPH_URL=https://PLACEHOLDER_REPLACE_ME_LANGGRAPH_URL
+ENV NEXT_PUBLIC_MASTRA_URL=https://PLACEHOLDER_REPLACE_ME_MASTRA_URL
 
 # Server-side env vars needed at build time (for module initialization)
 #
@@ -104,7 +104,7 @@ ENV PATH="/app/drizzle-tools/node_modules/.bin:$PATH"
 
 # Copy entrypoint script for runtime placeholder replacement
 # Must be done before switching to nextjs user, and needs proper ownership
-COPY --chown=nextjs:nodejs scripts/entrypoint.sh /app/entrypoint.sh
+COPY --chown=nextjs:nodejs deploy/web/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 USER nextjs

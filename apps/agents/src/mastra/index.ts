@@ -74,7 +74,9 @@ export const mastra = new Mastra({
       }),
     ],
     cors: {
-      origin: ["http://localhost:3000"],
+      origin: process.env.CORS_ORIGIN
+        ? process.env.CORS_ORIGIN.split(",")
+        : ["http://localhost:3000"],
       allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       allowHeaders: ["*"],
       credentials: true,

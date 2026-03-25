@@ -1,17 +1,18 @@
 name: Production Build and Deploy
 
-# Runs when a version tag is pushed - builds, pushes, and deploys to production
 on:
   push:
     tags:
-      - 'v*'
+      - 'web/v*'
+      - 'agents/v*'
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push:
+  # ── Web (Next.js) ────────────────────────────────────────────────────
+  build-and-push-web:
+    if: startsWith(github.ref, 'refs/tags/web/v')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -35,25 +36,22 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/web
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=match,pattern=web/v(.*),group=1
             type=raw,value=latest
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./deploy/Dockerfile
+          file: ./deploy/web/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          # NEXT_PUBLIC_* vars are NOT passed here - they use placeholders
-          # that get replaced at runtime via entrypoint.sh from deploy env vars
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
           build-args: |
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
@@ -63,7 +61,7 @@ jobs:
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
             BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }}
 
-      - name: Trigger Dokploy Deployment
+      - name: Trigger Dokploy Deployment (Web)
         run: |
           curl -X POST \
             "https://${{ secrets.DOKPLOY_URL }}/api/application.deploy" \
@@ -71,3 +69,55 @@ jobs:
             -H "x-api-key: ${{ secrets.DOKPLOY_API_KEY }}" \
             -H 'Content-Type: application/json' \
             -d '{"applicationId": "${{ secrets.DOKPLOY_APP_ID }}"}'
+
+  # ── Agents (Mastra) ─────────────────────────────────────────────────
+  build-and-push-agents:
+    if: startsWith(github.ref, 'refs/tags/agents/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/agents
+          tags: |
+            type=match,pattern=agents/v(.*),group=1
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./deploy/agents/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64
+          cache-from: type=gha,scope=agents
+          cache-to: type=gha,mode=max,scope=agents
+
+      - name: Trigger Dokploy Deployment (Agents)
+        run: |
+          curl -X POST \
+            "https://${{ secrets.DOKPLOY_URL }}/api/application.deploy" \
+            -H 'accept: application/json' \
+            -H "x-api-key: ${{ secrets.DOKPLOY_API_KEY }}" \
+            -H 'Content-Type: application/json' \
+            -d '{"applicationId": "${{ secrets.DOKPLOY_AGENTS_APP_ID }}"}'

@@ -1,12 +1,12 @@
 name: Test Build
 
-# Manually triggered - builds the Docker image without pushing or deploying
+# Manually triggered - builds Docker images without pushing or deploying
 on:
   workflow_dispatch:
 
 jobs:
-  test-build:
-    name: Docker Build (Test)
+  test-build-web:
+    name: Docker Build - Web (Test)
     runs-on: ubuntu-latest
 
     steps:
@@ -20,11 +20,11 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./deploy/Dockerfile
+          file: ./deploy/web/Dockerfile
           push: false
           platforms: linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
           build-args: |
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
@@ -33,3 +33,24 @@ jobs:
             GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
             BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }}
+
+  test-build-agents:
+    name: Docker Build - Agents (Test)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./deploy/agents/Dockerfile
+          push: false
+          platforms: linux/amd64
+          cache-from: type=gha,scope=agents
+          cache-to: type=gha,mode=max,scope=agents
