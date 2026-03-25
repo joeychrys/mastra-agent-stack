@@ -13,5 +13,5 @@ if [ -n "$NEXT_PUBLIC_MASTRA_URL" ]; then
   find /app/.next -type f \( -name '*.js' -o -name '*.json' \) -exec sed -i "s~https://PLACEHOLDER_REPLACE_ME_MASTRA_URL~${NEXT_PUBLIC_MASTRA_URL}~g" {} +
 fi
 
-# Start the Next.js server
-exec node server.js
+# Start the Next.js server (standalone output preserves monorepo directory structure)
+exec node apps/web/server.js
