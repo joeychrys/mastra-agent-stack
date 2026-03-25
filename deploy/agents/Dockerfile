@@ -7,7 +7,7 @@ FROM base AS deps
 WORKDIR /app
 
 # Copy workspace scaffolding + agents package manifest
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps/agents/package.json ./apps/agents/
 COPY packages/shared-types/package.json ./packages/shared-types/
 
