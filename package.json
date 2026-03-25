@@ -1,7 +1,12 @@
 {
+  "name": "mastra-agent-stack",
   "private": true,
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "dev": "turbo run dev"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
@@ -14,7 +19,21 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.5",
     "husky": "^9.1.7",
-    "lint-staged": "^16.1.0"
+    "lint-staged": "^16.1.0",
+    "turbo": "^2.8.20"
   },
-  "packageManager": "pnpm@10.32.1+sha512.a706938f0e89ac1456b6563eab4edf1d1faf3368d1191fc5c59790e96dc918e4456ab2e67d613de1043d2e8c81f87303e6b40d4ffeca9df15ef1ad567348f2be"
+  "packageManager": "pnpm@10.32.1+sha512.a706938f0e89ac1456b6563eab4edf1d1faf3368d1191fc5c59790e96dc918e4456ab2e67d613de1043d2e8c81f87303e6b40d4ffeca9df15ef1ad567348f2be",
+  "pnpm": {
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "next": "16"
+      }
+    },
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "esbuild",
+      "sharp",
+      "unrs-resolver"
+    ]
+  }
 }

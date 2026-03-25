@@ -10,15 +10,16 @@ FROM base AS deps
 # RUN apt-get update && apt-get install -y libc6-compat
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
-COPY ./web/package.json ./web/pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile
+# Copy workspace scaffolding + web package manifest for dependency resolution
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web/package.json ./apps/web/
+RUN pnpm install --frozen-lockfile --filter @repo/web...
 
 # 2. Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY ./web ./
+COPY --from=deps /app/ ./
+COPY apps/web ./apps/web
 
 # Build-time environment variables
 # NEXT_PUBLIC_* use placeholder URLs that get replaced at runtime by entrypoint.sh
@@ -65,7 +66,7 @@ ENV BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN pnpm run build
+RUN pnpm --filter @repo/web build
 
 # 3. Production image, copy all the files and run next
 FROM base AS runner
@@ -82,19 +83,19 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 # Copy package.json in case you need it for metadata or runtime dependencies
-COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/apps/web/package.json ./package.json
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./.next/static
 
 # Drizzle tooling for on-demand database management via Dokploy terminal:
 #   drizzle-kit migrate | push | pull
 # Installed in an isolated directory so pnpm doesn't clobber the standalone node_modules.
-COPY --from=builder --chown=nextjs:nodejs /app/drizzle.config.ts ./drizzle.config.ts
-COPY --from=builder --chown=nextjs:nodejs /app/src/db/schema.ts ./src/db/schema.ts
-COPY --from=builder --chown=nextjs:nodejs /app/src/drizzle ./src/drizzle
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/src/db/schema.ts ./src/db/schema.ts
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/src/drizzle ./src/drizzle
 RUN mkdir -p /app/drizzle-tools && \
     cd /app/drizzle-tools && \
     pnpm init && \

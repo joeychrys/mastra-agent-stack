@@ -3,7 +3,7 @@
 # ──────────────────────────────────────────────────────────────
 #
 # Usage:
-#   make install   — install all dependencies (root + backend + frontend)
+#   make install   — install all dependencies
 #   make dev       — start everything (db, backend, frontend)
 #   make stop      — tear down Docker services
 #   make help      — show all available targets
@@ -13,30 +13,16 @@
 SHELL := /bin/bash
 
 # Directories
-BACKEND  := agents
-FRONTEND := web
+BACKEND  := apps/agents
+FRONTEND := apps/web
 
 # ──────────────────────────────────────────────────────────────
 # Setup
 # ──────────────────────────────────────────────────────────────
 
 .PHONY: install
-install: ## Install all dependencies (root, backend, frontend)
+install: ## Install all dependencies (single workspace install)
 	pnpm install
-	cd $(BACKEND) && pnpm install
-	cd $(FRONTEND) && pnpm install
-
-.PHONY: install-root
-install-root: ## Install root dependencies only (Husky, lint-staged, Biome)
-	pnpm install
-
-.PHONY: install-backend
-install-backend: ## Install backend dependencies only
-	cd $(BACKEND) && pnpm install
-
-.PHONY: install-frontend
-install-frontend: ## Install frontend dependencies only
-	cd $(FRONTEND) && pnpm install
 
 .PHONY: setup
 setup: install ## First-time setup: install deps + copy env files
@@ -69,19 +55,19 @@ db-logs: ## Tail PostgreSQL logs
 # ──────────────────────────────────────────────────────────────
 
 .PHONY: db-migrate
-db-migrate: ## Run Drizzle migrations (frontend)
+db-migrate: ## Run Drizzle migrations (web)
 	cd $(FRONTEND) && pnpm db:migrate
 
 .PHONY: db-push
-db-push: ## Push Drizzle schema to database (frontend)
+db-push: ## Push Drizzle schema to database (web)
 	cd $(FRONTEND) && pnpm db:push
 
 .PHONY: db-generate
-db-generate: ## Generate Drizzle migration files (frontend)
+db-generate: ## Generate Drizzle migration files (web)
 	cd $(FRONTEND) && pnpm db:generate
 
 .PHONY: db-studio
-db-studio: ## Open Drizzle Studio (frontend)
+db-studio: ## Open Drizzle Studio (web)
 	cd $(FRONTEND) && pnpm db:studio
 
 # ──────────────────────────────────────────────────────────────
@@ -109,22 +95,23 @@ dev-frontend: ## Start frontend only (Next.js dev server)
 stop: db-down ## Stop all services (Docker)
 
 # ──────────────────────────────────────────────────────────────
-# Build
+# Build (via Turborepo — cached + dependency-aware)
 # ──────────────────────────────────────────────────────────────
 
 .PHONY: build
-build: build-backend build-frontend ## Build both projects
+build: ## Build all projects (turbo)
+	pnpm turbo run build
 
 .PHONY: build-backend
-build-backend: ## Build backend (mastra build)
-	cd $(BACKEND) && pnpm build
+build-backend: ## Build backend only
+	pnpm turbo run build --filter=@repo/agents
 
 .PHONY: build-frontend
-build-frontend: ## Build frontend (next build)
-	cd $(FRONTEND) && pnpm build
+build-frontend: ## Build frontend only
+	pnpm turbo run build --filter=@repo/web
 
 # ──────────────────────────────────────────────────────────────
-# Lint / Format
+# Lint / Format (Biome — runs from root)
 # ──────────────────────────────────────────────────────────────
 
 .PHONY: lint
@@ -144,19 +131,20 @@ format-fix: ## Auto-format entire repo
 	pnpm biome format --write .
 
 # ──────────────────────────────────────────────────────────────
-# Type checking
+# Type checking (via Turborepo)
 # ──────────────────────────────────────────────────────────────
 
 .PHONY: typecheck
-typecheck: typecheck-backend typecheck-frontend ## Type-check both projects
+typecheck: ## Type-check all projects (turbo)
+	pnpm turbo run typecheck
 
 .PHONY: typecheck-backend
-typecheck-backend: ## Type-check backend
-	cd $(BACKEND) && pnpm tsc --noEmit
+typecheck-backend: ## Type-check backend only
+	pnpm turbo run typecheck --filter=@repo/agents
 
 .PHONY: typecheck-frontend
-typecheck-frontend: ## Type-check frontend
-	cd $(FRONTEND) && pnpm tsc --noEmit
+typecheck-frontend: ## Type-check frontend only
+	pnpm turbo run typecheck --filter=@repo/web
 
 # ──────────────────────────────────────────────────────────────
 # Quality (run before committing)
@@ -176,10 +164,11 @@ fix: lint-fix ## Auto-fix all lint/format issues
 clean: ## Remove build artifacts and caches
 	rm -rf $(BACKEND)/dist $(BACKEND)/.mastra
 	rm -rf $(FRONTEND)/.next $(FRONTEND)/out
+	rm -rf .turbo apps/*/.turbo packages/*/.turbo
 
 .PHONY: clean-deps
 clean-deps: ## Remove all node_modules directories
-	rm -rf node_modules $(BACKEND)/node_modules $(FRONTEND)/node_modules
+	rm -rf node_modules $(BACKEND)/node_modules $(FRONTEND)/node_modules packages/*/node_modules
 
 .PHONY: nuke
 nuke: clean clean-deps db-down ## Full reset: clean + remove deps + stop Docker

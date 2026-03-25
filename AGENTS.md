@@ -4,43 +4,49 @@ Guidance for AI coding agents working in this monorepo.
 
 ## Repository Structure
 
-Two independent projects (no workspace manager). Package manager: **pnpm**.
+pnpm workspace monorepo with Turborepo for task orchestration. Package manager: **pnpm**.
 
-| Directory   | Description                                 | Runtime       |
-| ----------- | ------------------------------------------- | ------------- |
-| `agents/`   | Mastra AI agent backend (TypeScript, ESM)   | Node >= 22.13 |
-| `web/`      | Next.js 16 + assistant-ui chat (React 19)   | Node >= 18    |
+| Directory               | Package               | Description                                 | Runtime       |
+| ----------------------- | --------------------- | ------------------------------------------- | ------------- |
+| `apps/agents/`          | `@repo/agents`        | Mastra AI agent backend (TypeScript, ESM)   | Node >= 22.13 |
+| `apps/web/`             | `@repo/web`           | Next.js 16 + assistant-ui chat (React 19)   | Node >= 18    |
+| `packages/shared-types/`| `@repo/shared-types`  | Shared TypeScript types and constants       | —             |
 
 Root `docker-compose.yml` runs PostgreSQL 16 (`localhost:5432`, `user`/`password`) with two databases: `mastra` (agents) and `betterauth` (web). Root `Makefile` has shortcuts — run `make help`.
 
 ## Commands
 
-### agents/
+### Root (workspace-level)
 
 ```bash
-pnpm install          # install deps
+pnpm install          # install all deps (single lockfile)
+pnpm turbo run build  # build all projects (cached)
+pnpm turbo run typecheck  # type-check all projects (cached)
+pnpm biome check .    # lint entire repo
+```
+
+### apps/agents/
+
+```bash
 pnpm dev              # Mastra Studio at localhost:4111
 pnpm build            # production build (mastra build)
 pnpm lint             # biome check .
 pnpm lint:fix         # biome check --write .
-pnpm tsc --noEmit     # type-check
+pnpm typecheck        # tsc --noEmit
 ```
 
 No test framework configured. If added, use Vitest with ESM.
 
 Mastra structure: `src/mastra/` entry point. Subdirs: `agents/`, `tools/`, `workflows/`, `scorers/`, `mcp/`.
 
-### web/
+### apps/web/
 
 ```bash
-pnpm install          # install deps
 pnpm dev              # Next.js dev server (Turbopack)
 pnpm build            # production build
-pnpm lint             # eslint
-pnpm lint:fix         # eslint --fix
-pnpm format           # prettier --write
-pnpm format:check     # prettier --check
-pnpm tsc --noEmit     # type-check
+pnpm lint             # biome check .
+pnpm lint:fix         # biome check --write .
+pnpm typecheck        # tsc --noEmit
 pnpm db:migrate       # run Drizzle migrations
 pnpm db:push          # push schema to database
 pnpm db:generate      # generate migration files
@@ -62,13 +68,25 @@ make db-reset         # destroy + restart PostgreSQL
 
 Husky + lint-staged runs `biome check --write` on staged `.ts/.tsx/.js/.jsx` and `biome format --write` on `.json`. Skip: `git commit --no-verify`.
 
-Environment: `agents/.env` and `web/.env` (both have `.env.example`). Never commit `.env` files.
+Environment: `apps/agents/.env` and `apps/web/.env` (both have `.env.example`). Never commit `.env` files.
 
 ## Formatting (Biome — shared root config)
 
 `biome.json`: 2-space indent, double quotes, semicolons always, line width 100. Auto-organizes imports. Key lint rules: `noUnusedImports` (warn), `noExplicitAny` (warn).
 
-## Code Style — agents/
+Biome is the sole linter/formatter for both projects. No ESLint or Prettier.
+
+## Shared Types (`packages/shared-types/`)
+
+The `@repo/shared-types` package contains TypeScript interfaces and constants shared between apps:
+
+- `WeatherResult` — output shape of the get-weather tool
+- `MastraThread`, `MastraThreadListResponse` — Mastra Memory API response types
+- `AGENT_IDS` — canonical agent ID strings
+
+Import from `@repo/shared-types` in either app. The package uses `workspace:*` protocol — no publishing needed.
+
+## Code Style — apps/agents/
 
 TypeScript `strict: true`, target ES2022, ESM (`"type": "module"`).
 
@@ -96,9 +114,9 @@ import { weatherTool } from "../tools/weather-tool";
 
 **Patterns:** Factory functions (`createTool()`, `createStep()`, `new Agent()`). Fluent workflow chaining (`.then().then().commit()`). Config via single options object.
 
-## Code Style — web/
+## Code Style — apps/web/
 
-TypeScript `strict: true`, JSX react-jsx. ESLint + Prettier for linting/formatting.
+TypeScript `strict: true`, JSX react-jsx. Biome for linting/formatting.
 
 **Imports:** `import type` for type-only. Path alias `@/*` maps to `src/`. **Chat route exception:** files under `src/app/(chat)/chat/` use relative imports internally; `@/` only for shared UI (`@/components/ui/*`, `@/lib/utils`).
 
@@ -125,7 +143,7 @@ import type { FC } from "react";
 
 ### Thread ID Race Condition (assistant-ui + Mastra Memory)
 
-**Files:** `web/src/app/(chat)/chat/lib/mastra-thread-adapter.ts`, `web/src/app/(chat)/chat/assistant.tsx`
+**Files:** `apps/web/src/app/(chat)/chat/lib/mastra-thread-adapter.ts`, `apps/web/src/app/(chat)/chat/assistant.tsx`
 
 When using `assistant-ui`'s `unstable_useRemoteThreadListRuntime` with Mastra Memory, a race condition during new thread creation causes duplicate threads with `__LOCALID_*` IDs in the database.
 
@@ -151,8 +169,9 @@ When using `assistant-ui`'s `unstable_useRemoteThreadListRuntime` with Mastra Me
 4. Prefer named exports; default exports only for Next.js pages/layouts/config
 5. `cn()` for all Tailwind class merging in the frontend
 6. `"use client"` only when a component uses hooks or browser APIs
-7. Run `pnpm tsc --noEmit` in each project to verify types before committing
+7. Run `make typecheck` to verify types before committing (uses turbo caching)
 8. Chat route: relative imports internally, `@/` aliases only for shared UI
 9. Chat route has its own `QueryClient` singleton — hooks and thread adapter must share it
 10. After schema changes: `make db-generate` then `make db-migrate`
 11. After fresh clone or `make db-reset`: run `make db-migrate`
+12. Shared types go in `packages/shared-types/` — both apps import from `@repo/shared-types`

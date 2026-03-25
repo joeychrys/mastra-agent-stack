@@ -1,6 +1,6 @@
 version: 2
 updates:
-  # Root dev tooling (Husky, lint-staged, Biome)
+  # Root dev tooling (Husky, lint-staged, Biome, Turborepo)
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -13,7 +13,7 @@ updates:
 
   # Mastra AI agent backend
   - package-ecosystem: "npm"
-    directory: "/agents"
+    directory: "/apps/agents"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
@@ -24,7 +24,7 @@ updates:
 
   # Next.js frontend application
   - package-ecosystem: "npm"
-    directory: "/web"
+    directory: "/apps/web"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 20

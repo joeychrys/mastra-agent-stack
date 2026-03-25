@@ -19,22 +19,23 @@ The shared base image for all other stages. Uses Node.js 22 on Debian Bookworm (
 
 ```dockerfile
 FROM base AS deps
-COPY ./web/package.json ./web/pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web/package.json ./apps/web/
+RUN pnpm install --frozen-lockfile --filter @repo/web...
 ```
 
-Installs the full dependency tree (including devDependencies) from the lockfile. This stage is cached by Docker -- it only re-runs when `package.json` or `pnpm-lock.yaml` change, which makes subsequent builds fast.
+Copies the workspace root files and web's package manifest, then installs only the dependencies needed by `@repo/web`. This stage is cached by Docker -- it only re-runs when `package.json`, `pnpm-lock.yaml`, or `pnpm-workspace.yaml` change, which makes subsequent builds fast.
 
 ### Stage 3: `builder`
 
 ```dockerfile
 FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
-COPY ./web ./
-RUN pnpm run build
+COPY --from=deps /app/ ./
+COPY apps/web ./apps/web
+RUN pnpm --filter @repo/web build
 ```
 
-Copies the installed `node_modules` from `deps` and the full `web/` source code, then runs `next build`. This produces the `.next/standalone/` output -- a self-contained production bundle with only the files and modules the app actually needs at runtime (via Next.js output tracing). The standalone output does **not** include source files like `drizzle.config.ts` or `src/db/schema.ts` since they aren't imported by the app at runtime.
+Copies the installed workspace from `deps` and the full `apps/web/` source code, then runs `next build`. This produces the `.next/standalone/` output -- a self-contained production bundle with only the files and modules the app actually needs at runtime (via Next.js output tracing). The standalone output does **not** include source files like `drizzle.config.ts` or `src/db/schema.ts` since they aren't imported by the app at runtime.
 
 **Build-time environment variables:** Server-side env vars (`DATABASE_URL`, `RESEND_API_KEY`, etc.) are passed as build args. These only need to satisfy module initialization during the build -- they don't need to be real credentials. `NEXT_PUBLIC_*` vars use placeholder values (`https://PLACEHOLDER_REPLACE_ME_*`) that get replaced at container start by `entrypoint.sh`. This placeholder-and-replace pattern is based on [a very heated discussion on Next.js's repo.](https://github.com/vercel/next.js/discussions/17641#discussioncomment-9376344)
 

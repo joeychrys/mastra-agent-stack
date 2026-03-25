@@ -1,13 +1,21 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.6/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.8/schema.json",
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
     "enabled": true,
     "rules": {
       "recommended": true,
+      "complexity": {
+        "noUselessFragments": "warn"
+      },
       "correctness": {
         "noUnusedImports": "warn",
+        "noUnusedVariables": "warn",
+        "noUnusedFunctionParameters": "warn",
         "useExhaustiveDependencies": "warn"
+      },
+      "style": {
+        "noNonNullAssertion": "warn"
       },
       "suspicious": {
         "noExplicitAny": "warn",
@@ -15,9 +23,14 @@
         "noDocumentCookie": "warn"
       },
       "a11y": {
+        "noSvgWithoutTitle": "warn",
         "noRedundantAlt": "warn",
+        "useAriaPropsForRole": "warn",
         "useSemanticElements": "warn",
         "useFocusableInteractive": "warn"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "warn"
       },
       "performance": {
         "noImgElement": "warn"
@@ -61,6 +74,7 @@
       "!**/.next",
       "!**/.mastra",
       "!**/dist",
+      "!**/.turbo",
       "!**/.husky",
       "!**/pnpm-lock.yaml",
       "!**/package-lock.json"

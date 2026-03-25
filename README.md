@@ -4,10 +4,11 @@ A full-stack AI agent application with a Mastra-powered backend and a Next.js ch
 
 ## Architecture
 
-| Directory   | Description                                    | Key Tech                                      |
-| ----------- | ---------------------------------------------- | --------------------------------------------- |
-| `agents/`   | Mastra AI agent backend                        | Mastra, TypeScript, Zod, PostgreSQL           |
-| `web/`      | Next.js web app with chat UI                   | Next.js 16, React 19, assistant-ui, Tailwind v4 |
+| Directory                | Package              | Description                    | Key Tech                                         |
+| ------------------------ | -------------------- | ------------------------------ | ------------------------------------------------ |
+| `apps/agents/`           | `@repo/agents`       | Mastra AI agent backend        | Mastra, TypeScript, Zod, PostgreSQL              |
+| `apps/web/`              | `@repo/web`          | Next.js web app with chat UI   | Next.js 16, React 19, assistant-ui, Tailwind v4  |
+| `packages/shared-types/` | `@repo/shared-types` | Shared TypeScript types        | TypeScript                                       |
 
 A shared `docker-compose.yml` runs a local PostgreSQL 16 instance with two databases:
 
@@ -27,8 +28,8 @@ A shared `docker-compose.yml` runs a local PostgreSQL 16 instance with two datab
 make setup
 
 # 2. Add your API keys
-#    - agents/.env       → OPENAI_API_KEY
-#    - web/.env          → BETTER_AUTH_SECRET, Google OAuth creds, etc.
+#    - apps/agents/.env  → OPENAI_API_KEY
+#    - apps/web/.env     → BETTER_AUTH_SECRET, Google OAuth creds, etc.
 
 # 3. Start everything (PostgreSQL + backend + frontend)
 make dev
@@ -54,18 +55,18 @@ make db-reset        # destroy and recreate PostgreSQL volume
 make db-migrate      # run Drizzle migrations (web)
 make lint            # lint entire repo
 make lint-fix        # lint + auto-fix
-make typecheck       # type-check both projects
+make typecheck       # type-check all projects (turbo, cached)
 make check           # lint + typecheck (pre-commit sanity check)
-make build           # production build both projects
+make build           # production build all projects (turbo, cached)
 make nuke            # full reset (clean + remove deps + stop Docker)
 ```
 
 ## Project Structure
 
-### Backend (`agents/`)
+### Backend (`apps/agents/`)
 
 ```
-agents/src/mastra/
+apps/agents/src/mastra/
   index.ts          # Mastra entry point and configuration
   agents/           # Agent definitions (behavior, goals, model, tools)
   tools/            # Reusable tools agents can call
@@ -75,10 +76,10 @@ agents/src/mastra/
   auth/             # JWT/JWKS auth integration
 ```
 
-### Frontend (`web/`)
+### Frontend (`apps/web/`)
 
 ```
-web/src/app/
+apps/web/src/app/
   (auth)/           # Sign-in, sign-up, reset-password (no nav)
   (main)/           # Home, dashboard, account, admin, pricing, payment
   (chat)/chat/      # Full-viewport AI chat interface
@@ -90,11 +91,21 @@ web/src/app/
 
 The app uses route groups for layout isolation — `(auth)` pages have no navigation bar, `(main)` pages have one, and `(chat)` takes over the full viewport.
 
+### Shared Types (`packages/shared-types/`)
+
+```
+packages/shared-types/src/
+  weather.ts        # WeatherResult interface
+  threads.ts        # MastraThread, MastraThreadListResponse
+  agents.ts         # AGENT_IDS constants
+  index.ts          # Barrel export
+```
+
 ## Environment Variables
 
-Both projects have `.env.example` files. `make setup` copies them automatically.
+Both apps have `.env.example` files. `make setup` copies them automatically.
 
-**`agents/.env`**
+**`apps/agents/.env`**
 
 | Variable       | Purpose                          |
 | -------------- | -------------------------------- |
@@ -104,16 +115,17 @@ Both projects have `.env.example` files. `make setup` copies them automatically.
 | `JWT_ISSUER`     | JWT issuer URL                 |
 | `JWT_AUDIENCE`   | JWT audience URL               |
 
-**`web/.env`**
+**`apps/web/.env`**
 
-| Variable              | Purpose                              |
-| --------------------- | ------------------------------------ |
-| `BETTER_AUTH_SECRET`  | Auth encryption secret               |
-| `DATABASE_URL`        | PostgreSQL connection (betterauth db) |
-| `GOOGLE_CLIENT_ID`    | Google OAuth client ID               |
-| `GOOGLE_CLIENT_SECRET`| Google OAuth client secret           |
-| `RESEND_API_KEY`      | Email sending (Resend)               |
-| `POLAR_ACCESS_TOKEN`  | Polar.sh payments                    |
+| Variable                | Purpose                              |
+| ----------------------- | ------------------------------------ |
+| `NEXT_PUBLIC_MASTRA_URL`| Mastra backend URL (default: localhost:4111) |
+| `BETTER_AUTH_SECRET`    | Auth encryption secret               |
+| `DATABASE_URL`          | PostgreSQL connection (betterauth db) |
+| `GOOGLE_CLIENT_ID`      | Google OAuth client ID               |
+| `GOOGLE_CLIENT_SECRET`  | Google OAuth client secret           |
+| `RESEND_API_KEY`        | Email sending (Resend)               |
+| `POLAR_ACCESS_TOKEN`    | Polar.sh payments                    |
 
 ## Development Workflow
 
@@ -121,15 +133,15 @@ Both projects have `.env.example` files. `make setup` copies them automatically.
 
 ```bash
 # Backend only
-cd agents && pnpm dev
+cd apps/agents && pnpm dev
 
 # Frontend only
-cd web && pnpm dev
+cd apps/web && pnpm dev
 ```
 
 ### Database Migrations
 
-After changing the Drizzle schema in `web`:
+After changing the Drizzle schema in `apps/web`:
 
 ```bash
 make db-generate    # generate migration files
@@ -149,7 +161,7 @@ A Husky + lint-staged pre-commit hook runs Biome on staged files automatically. 
 ```bash
 make lint           # check for issues
 make lint-fix       # auto-fix issues
-make typecheck      # type-check both projects
+make typecheck      # type-check all projects (cached via Turborepo)
 ```
 
 ## Tech Stack
@@ -171,7 +183,8 @@ make typecheck      # type-check both projects
 - TanStack Query — server state management
 
 **Tooling**
-- pnpm — package manager
+- pnpm workspaces — monorepo package management
+- [Turborepo](https://turbo.build) — build orchestration and caching
 - Biome — linting and formatting
 - Husky + lint-staged — pre-commit hooks
 - Docker Compose — local PostgreSQL
