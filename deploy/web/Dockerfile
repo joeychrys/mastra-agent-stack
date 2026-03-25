@@ -30,38 +30,16 @@ COPY packages/shared-types ./packages/shared-types
 ENV NEXT_PUBLIC_BASE_URL=https://PLACEHOLDER_REPLACE_ME_BASE_URL
 ENV NEXT_PUBLIC_MASTRA_URL=https://PLACEHOLDER_REPLACE_ME_MASTRA_URL
 
-# Server-side env vars needed at build time (for module initialization)
-#
-# IMPORTANT: These values are ONLY used during the build to satisfy
-# module initialization. They do NOT need to be real/working credentials.
-# You can use dummy values like "fake_key" in GitHub Secrets.
-#
-# At RUNTIME, Dokploy environment variables override these and MUST be
-# real working credentials for the app to function.
-#
-# Example dummy values for GitHub Secrets:
-#   DATABASE_URL=postgresql://fake:fake@localhost:5432/fake
-#   RESEND_API_KEY=re_fake_key
-#   POLAR_ACCESS_TOKEN=fake_token
-#   POLAR_WEBHOOK_SECRET=fake_secret
-#   GOOGLE_CLIENT_ID=fake_client_id
-#   GOOGLE_CLIENT_SECRET=fake_client_secret
-#   BETTER_AUTH_SECRET=fake_auth_secret
-#
-ARG DATABASE_URL
-ARG RESEND_API_KEY
-ARG POLAR_ACCESS_TOKEN
-ARG POLAR_WEBHOOK_SECRET
-ARG GOOGLE_CLIENT_ID
-ARG GOOGLE_CLIENT_SECRET
-ARG BETTER_AUTH_SECRET
-ENV DATABASE_URL=$DATABASE_URL
-ENV RESEND_API_KEY=$RESEND_API_KEY
-ENV POLAR_ACCESS_TOKEN=$POLAR_ACCESS_TOKEN
-ENV POLAR_WEBHOOK_SECRET=$POLAR_WEBHOOK_SECRET
-ENV GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
-ENV GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
-ENV BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET
+# Server-side env vars needed at build time for module initialization only.
+# These dummy values satisfy imports during `next build` — real credentials
+# are injected at runtime via Dokploy environment variables.
+ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
+ENV RESEND_API_KEY="re_build_placeholder"
+ENV POLAR_ACCESS_TOKEN="build_placeholder"
+ENV POLAR_WEBHOOK_SECRET="build_placeholder"
+ENV GOOGLE_CLIENT_ID="build_placeholder"
+ENV GOOGLE_CLIENT_SECRET="build_placeholder"
+ENV BETTER_AUTH_SECRET="build_placeholder"
 
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry

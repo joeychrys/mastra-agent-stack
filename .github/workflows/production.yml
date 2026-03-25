@@ -52,14 +52,6 @@ jobs:
           platforms: linux/amd64
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
-          build-args: |
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
-            POLAR_ACCESS_TOKEN=${{ secrets.POLAR_ACCESS_TOKEN }}
-            POLAR_WEBHOOK_SECRET=${{ secrets.POLAR_WEBHOOK_SECRET }}
-            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
-            BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }}
 
       - name: Trigger Dokploy Deployment (Web)
         run: |
@@ -68,7 +60,7 @@ jobs:
             -H 'accept: application/json' \
             -H "x-api-key: ${{ secrets.DOKPLOY_API_KEY }}" \
             -H 'Content-Type: application/json' \
-            -d '{"applicationId": "${{ secrets.DOKPLOY_APP_ID }}"}'
+            -d '{"applicationId": "${{ secrets.DOKPLOY_WEB_APP_ID }}"}'
 
   # ── Agents (Mastra) ─────────────────────────────────────────────────
   build-and-push-agents:

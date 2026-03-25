@@ -65,16 +65,6 @@ jobs:
           platforms: linux/amd64
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
-          # NEXT_PUBLIC_* vars use placeholders - replaced at runtime
-          # Server-side vars can be dummy values for build validation
-          build-args: |
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
-            POLAR_ACCESS_TOKEN=${{ secrets.POLAR_ACCESS_TOKEN }}
-            POLAR_WEBHOOK_SECRET=${{ secrets.POLAR_WEBHOOK_SECRET }}
-            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
-            BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }}
 
   build-validation-agents:
     name: Docker Build (Agents)
