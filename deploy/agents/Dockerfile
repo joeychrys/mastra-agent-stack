@@ -43,7 +43,7 @@ USER mastra
 
 EXPOSE 4111
 ENV PORT=4111
-ENV HOSTNAME="0.0.0.0"
+ENV MASTRA_HOST="0.0.0.0"
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:4111/health || exit 1
