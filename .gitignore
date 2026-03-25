@@ -1,4 +1,9 @@
 node_modules
+.DS_Store
+
+# Turborepo
+.turbo
+
+# Lock files (only root pnpm-lock.yaml is tracked)
 package-lock.json
 yarn.lock
-.DS_Store

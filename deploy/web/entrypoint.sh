@@ -1,0 +1,22 @@
+#!/bin/sh
+set -e
+
+# Replace NEXT_PUBLIC_* placeholder URLs with runtime environment variables
+# These were baked in as https://PLACEHOLDER_REPLACE_ME_* during build
+# and are now replaced with actual values from Dokploy environment variables
+#
+# The standalone output preserves the monorepo structure, so .next lives
+# under apps/web/.next, not at the root.
+
+NEXT_DIR="/app/apps/web/.next"
+
+if [ -n "$NEXT_PUBLIC_BASE_URL" ]; then
+  find "$NEXT_DIR" -type f \( -name '*.js' -o -name '*.json' \) -exec sed -i "s~https://PLACEHOLDER_REPLACE_ME_BASE_URL~${NEXT_PUBLIC_BASE_URL}~g" {} +
+fi
+
+if [ -n "$NEXT_PUBLIC_MASTRA_URL" ]; then
+  find "$NEXT_DIR" -type f \( -name '*.js' -o -name '*.json' \) -exec sed -i "s~https://PLACEHOLDER_REPLACE_ME_MASTRA_URL~${NEXT_PUBLIC_MASTRA_URL}~g" {} +
+fi
+
+# Start the Next.js server
+exec node apps/web/server.js

@@ -5,20 +5,17 @@ on:
   pull_request:
     branches: ['main']
     paths:
-      - 'agents/**'
-      - 'next-app/**'
+      - 'apps/**'
+      - 'packages/**'
       - 'deploy/**'
       - 'scripts/**'
       - '.github/workflows/pr-validation.yml'
 
 jobs:
   # Fast checks - lint, format, type check
-  lint-and-format:
-    name: Lint & Format
+  lint-and-typecheck:
+    name: Lint & Typecheck
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./next-app
 
     steps:
       - name: Checkout repository
@@ -26,28 +23,28 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'pnpm'
-          cache-dependency-path: './next-app/pnpm-lock.yaml'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run ESLint
-        run: pnpm lint
+      - name: Lint (Biome)
+        run: pnpm biome check .
 
-      - name: Check Prettier formatting
-        run: pnpm format:check
+      - name: Typecheck backend
+        run: pnpm --filter @repo/agents typecheck
+
+      - name: Typecheck frontend
+        run: pnpm --filter @repo/web typecheck
 
   # Docker build validation - runs in parallel with lint
-  build-validation:
-    name: Docker Build
+  build-validation-web:
+    name: Docker Build (Web)
     runs-on: ubuntu-latest
 
     steps:
@@ -61,18 +58,29 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./deploy/Dockerfile
+          file: ./deploy/web/Dockerfile
           push: false
           platforms: linux/amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          # NEXT_PUBLIC_* vars use placeholders - replaced at runtime
-          # Server-side vars can be dummy values for build validation
-          build-args: |
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
-            POLAR_ACCESS_TOKEN=${{ secrets.POLAR_ACCESS_TOKEN }}
-            POLAR_WEBHOOK_SECRET=${{ secrets.POLAR_WEBHOOK_SECRET }}
-            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
-            BETTER_AUTH_SECRET=${{ secrets.BETTER_AUTH_SECRET }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+  build-validation-agents:
+    name: Docker Build (Agents)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (validation only - no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./deploy/agents/Dockerfile
+          push: false
+          platforms: linux/amd64
+          cache-from: type=gha,scope=agents
+          cache-to: type=gha,mode=max,scope=agents
