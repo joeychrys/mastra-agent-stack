@@ -25,7 +25,9 @@
       "a11y": {
         "noSvgWithoutTitle": "warn",
         "noRedundantAlt": "warn",
+        "noLabelWithoutControl": "warn",
         "useAriaPropsForRole": "warn",
+        "useKeyWithClickEvents": "warn",
         "useSemanticElements": "warn",
         "useFocusableInteractive": "warn"
       },

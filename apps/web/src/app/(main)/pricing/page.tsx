@@ -1,42 +1,35 @@
 "use client";
 
 import { Check } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
 export default function Pricing() {
-  const handleBasicPlan = async () => {
-    await authClient.checkout({
-      slug: "basic",
-    });
-  };
+  const { data: session } = authClient.useSession();
+  const router = useRouter();
 
-  const handleProPlan = async () => {
-    await authClient.checkout({
-      slug: "pro",
-    });
-  };
-
-  const handleTokenPurchase = async () => {
-    await authClient.checkout({
-      slug: "tokens",
-    });
+  const handleCheckout = async (slug: string) => {
+    if (!session) {
+      router.push("/sign-up?callbackUrl=/pricing");
+      return;
+    }
+    await authClient.checkout({ slug });
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-4">
       {/* Header Section */}
-      <section className="py-16 text-center">
+      <section className="py-8 text-center">
         <div className="space-y-6">
           <h1 className="text-4xl font-medium tracking-tight md:text-5xl">
             Simple, Transparent
             <br />
             <span className="text-muted-foreground">Pricing</span>
           </h1>
-          <p className="text-muted-foreground mx-auto max-w-2xl text-base leading-relaxed">
+          <p className="mx-auto max-w-2xl text-base leading-relaxed text-muted-foreground">
             Choose the perfect plan for your AI agent needs. Scale as you grow with flexible pricing
             options.
           </p>
@@ -47,16 +40,16 @@ export default function Pricing() {
       <section className="py-8">
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3">
           {/* Basic Plan */}
-          <div className="border-border flex flex-col rounded-lg border p-6">
+          <div className="flex flex-col rounded-lg border border-border p-6">
             <div className="mb-6">
               <span className="font-medium">Basic</span>
-              <p className="text-muted-foreground mt-1 text-sm">For individuals and small teams</p>
+              <p className="mt-1 text-sm text-muted-foreground">For individuals and small teams</p>
             </div>
 
             <div className="mb-6">
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-medium">$20</span>
-                <span className="text-muted-foreground text-sm">/ month</span>
+                <span className="text-sm text-muted-foreground">/ month</span>
               </div>
             </div>
 
@@ -68,26 +61,26 @@ export default function Pricing() {
               <Feature>Email support</Feature>
             </ul>
 
-            <Button className="w-full" onClick={handleBasicPlan}>
+            <Button className="w-full" onClick={() => handleCheckout("basic")}>
               Get Started
             </Button>
           </div>
 
           {/* Pro Plan */}
-          <div className="border-border relative flex flex-col rounded-lg border p-6">
-            <div className="bg-foreground text-background absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-xs">
+          <div className="relative flex flex-col rounded-lg border border-border p-6">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-foreground px-3 py-1 text-xs text-background">
               Popular
             </div>
 
             <div className="mb-6">
               <span className="font-medium">Pro</span>
-              <p className="text-muted-foreground mt-1 text-sm">For growing businesses</p>
+              <p className="mt-1 text-sm text-muted-foreground">For growing businesses</p>
             </div>
 
             <div className="mb-6">
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-medium">$80</span>
-                <span className="text-muted-foreground text-sm">/ month</span>
+                <span className="text-sm text-muted-foreground">/ month</span>
               </div>
             </div>
 
@@ -101,23 +94,23 @@ export default function Pricing() {
               <Feature>Custom integrations</Feature>
             </ul>
 
-            <Button className="w-full" onClick={handleProPlan}>
+            <Button className="w-full" onClick={() => handleCheckout("pro")}>
               Get Started
             </Button>
           </div>
 
-          {/* Enterprise Plan */}
-          <div className="border-border flex flex-col rounded-lg border p-6">
+          {/* Max Plan */}
+          <div className="flex flex-col rounded-lg border border-border p-6">
             <div className="mb-6">
-              <span className="font-medium">Enterprise</span>
-              <p className="text-muted-foreground mt-1 text-sm">For large organizations</p>
+              <span className="font-medium">Max</span>
+              <p className="mt-1 text-sm text-muted-foreground">For high usage</p>
             </div>
 
             <div className="mb-6">
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-medium">Custom</span>
+                <span className="text-3xl font-medium">$100</span>
+                <span className="text-sm text-muted-foreground">/ month</span>
               </div>
-              <p className="text-muted-foreground mt-1 text-xs">Tailored to your needs</p>
             </div>
 
             <ul className="mb-6 flex-1 space-y-3">
@@ -132,37 +125,9 @@ export default function Pricing() {
               <Feature>Dedicated account manager</Feature>
             </ul>
 
-            <Link href="/contact" className="w-full">
-              <Button className="w-full" variant="outline">
-                Contact Sales
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Token Purchase Section */}
-      <section className="pb-16">
-        <div className="border-border mx-auto max-w-5xl rounded-lg border p-6">
-          <div className="grid gap-6 md:grid-cols-3 md:items-center">
-            <div className="text-center md:text-left">
-              <span className="font-medium">Token Pack</span>
-              <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
-                Boost your AI agent capabilities
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="flex items-baseline justify-center gap-1">
-                <span className="text-2xl font-medium">$5</span>
-                <span className="text-muted-foreground text-sm">/ 10 tokens</span>
-              </div>
-              <p className="text-muted-foreground mt-1 text-xs">One-time purchase</p>
-            </div>
-
-            <div className="text-center md:text-right">
-              <Button onClick={handleTokenPurchase}>Purchase Tokens</Button>
-            </div>
+            <Button className="w-full" onClick={() => handleCheckout("max")}>
+              Get Started
+            </Button>
           </div>
         </div>
       </section>

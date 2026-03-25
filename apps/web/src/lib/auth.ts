@@ -11,7 +11,7 @@ import { VerificationEmail } from "@/components/email-templates/verification-ema
 
 import db from "@/db";
 
-const getResend = () => new Resend(process.env.RESEND_API_KEY!);
+const getResend = () => new Resend(process.env.RESEND_API_KEY ?? "");
 const getPolarClient = () =>
   new Polar({
     accessToken: process.env.POLAR_ACCESS_TOKEN,
@@ -22,7 +22,7 @@ export const auth = betterAuth({
   user: {
     deleteUser: {
       enabled: true,
-      sendDeleteAccountVerification: async ({ user, url, token }) => {
+      sendDeleteAccountVerification: async ({ user, url }) => {
         await getResend().emails.send({
           from: "Next Starter <account-services@joeychrys.com>",
           to: user.email,
@@ -81,24 +81,25 @@ export const auth = betterAuth({
         checkout({
           products: [
             {
-              productId: "f22fe868-afdb-4234-afe7-2766cb373ebd",
+              productId: "9402dcea-33d6-4311-a6a0-d6e62a3980a8",
               slug: "basic",
             },
             {
-              productId: "9813452d-8812-4f49-9d33-a34be797b46b",
+              productId: "41ed1276-c3d4-4c83-98d8-2c7fa9a45fac",
               slug: "pro",
             },
             {
-              productId: "b85cdce5-fabd-4fb4-b3ff-620893bd795c",
-              slug: "tokens",
+              productId: "ea5f81cb-7443-4dae-8a04-0a26460d1647",
+              slug: "max",
             },
           ],
           successUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success?checkout_id={CHECKOUT_ID}`,
+          authenticatedUsersOnly: true,
         }),
         portal(),
         usage(),
         webhooks({
-          secret: process.env.POLAR_WEBHOOK_SECRET!,
+          secret: process.env.POLAR_WEBHOOK_SECRET ?? "",
         }),
       ],
     }),

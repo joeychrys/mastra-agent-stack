@@ -1,40 +1,56 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { useForm } from "@tanstack/react-form";
+import { Loader2, MoveRight } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { toast } from "sonner";
-import type { z } from "zod";
 
 import { GoogleIcon } from "@/components/icons/google-icon";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
+import { Separator } from "@/components/ui/separator";
 import { authClient } from "@/lib/auth-client";
 import { SignInFormSchema } from "@/lib/schemas";
 
-export default function SignInPage() {
+function SignInForm() {
   const [loading, setLoading] = useState(false);
   const [googleSignInPending, setGoogleSignInPending] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
 
-  const form = useForm<z.infer<typeof SignInFormSchema>>({
-    resolver: zodResolver(SignInFormSchema),
+  const form = useForm({
     defaultValues: {
       email: "",
       password: "",
+    },
+    validators: {
+      onSubmit: SignInFormSchema,
+    },
+    onSubmit: async ({ value }) => {
+      await authClient.signIn.email({
+        email: value.email,
+        password: value.password,
+        callbackURL: callbackUrl,
+        fetchOptions: {
+          onResponse: () => {
+            setLoading(false);
+          },
+          onRequest: () => {
+            setLoading(true);
+          },
+          onError: (ctx) => {
+            toast.error(`Uh Oh! ${ctx.error.message}`);
+          },
+          onSuccess: async () => {
+            router.push(callbackUrl);
+          },
+        },
+      });
     },
   });
 
@@ -61,100 +77,133 @@ export default function SignInPage() {
     }
   }
 
-  async function onSubmit(data: z.infer<typeof SignInFormSchema>) {
-    await authClient.signIn.email({
-      email: data.email,
-      password: data.password,
-      callbackURL: "/",
-      fetchOptions: {
-        onResponse: () => {
-          setLoading(false);
-        },
-        onRequest: () => {
-          setLoading(true);
-        },
-        onError: (ctx) => {
-          toast.error(`Uh Oh! ${ctx.error.message}`);
-        },
-        onSuccess: async () => {
-          router.push("/");
-        },
-      },
-    });
-  }
-
   return (
-    <section className="mx-auto max-w-md p-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Sign In</CardTitle>
-          <CardDescription>Enter the following information to sign in.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-6">
-            {/* Sign In Form */}
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem className="grid gap-2">
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input placeholder="better@auth.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+    <div className="flex min-h-svh flex-col items-center justify-center px-4 py-16">
+      <div className="w-full max-w-md space-y-8 rounded-2xl border border-border bg-card p-8 sm:p-10">
+        {/* Header */}
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
+          <p className="text-sm text-muted-foreground">
+            Welcome back. Enter your credentials below.
+          </p>
+        </div>
 
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem className="grid gap-2">
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <PasswordInput placeholder="" autoComplete="new-password" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" disabled={loading}>
-                  {loading ? <Loader2 size={16} className="animate-spin" /> : "Sign In"}
-                </Button>
-              </form>
-            </Form>
+        <Separator />
 
-            {/* Social Sign In */}
-            <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-              <span className="bg-card text-muted-foreground relative z-10 px-2">
-                Or continue with
-              </span>
-            </div>
-            <Button onClick={handleGoogleSignIn} variant={"outline"} disabled={googleSignInPending}>
-              <div className="flex h-4 w-4 items-center justify-center">
-                {googleSignInPending ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <GoogleIcon />
-                )}
-              </div>
-              <span className="text-sm">Sign in with Google</span>
-            </Button>
+        {/* Form */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
+          className="space-y-5"
+        >
+          <FieldGroup>
+            <form.Field name="email">
+              {(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Email address</FieldLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                      placeholder="you@example.com"
+                    />
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </Field>
+                );
+              }}
+            </form.Field>
 
-            {/* Sign Up Link */}
-            <div className="flex w-full justify-center space-x-2">
-              <span>Don&apos;t have an account?</span>
-              <Link className="underline" href={"sign-up"}>
-                Sign up
-              </Link>
-            </div>
+            <form.Field name="password">
+              {(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <div className="flex items-center justify-between">
+                      <FieldLabel htmlFor={field.name}>Password</FieldLabel>
+                      <Link
+                        href="/forgot-password"
+                        className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
+                    <PasswordInput
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      aria-invalid={isInvalid}
+                      autoComplete="current-password"
+                    />
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </Field>
+                );
+              }}
+            </form.Field>
+          </FieldGroup>
+
+          <Button type="submit" disabled={loading} size="lg" className="w-full">
+            {loading ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <>
+                Continue
+                <MoveRight className="h-4 w-4" />
+              </>
+            )}
+          </Button>
+        </form>
+
+        {/* Divider */}
+        <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
+          <span className="relative z-10 bg-card px-2 text-muted-foreground">or</span>
+        </div>
+
+        {/* Social sign in */}
+        <Button
+          onClick={handleGoogleSignIn}
+          variant="outline"
+          size="lg"
+          disabled={googleSignInPending}
+          className="w-full"
+        >
+          <div className="flex h-4 w-4 items-center justify-center">
+            {googleSignInPending ? <Loader2 size={16} className="animate-spin" /> : <GoogleIcon />}
           </div>
-        </CardContent>
-      </Card>
-    </section>
+          <span className="text-sm">Continue with Google</span>
+        </Button>
+
+        {/* Footer */}
+        <p className="text-center text-sm text-muted-foreground">
+          New here?{" "}
+          <Link
+            className="font-medium text-foreground underline underline-offset-4 hover:text-foreground/80"
+            href={
+              callbackUrl !== "/"
+                ? `/sign-up?callbackUrl=${encodeURIComponent(callbackUrl)}`
+                : "/sign-up"
+            }
+          >
+            Create an account
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense>
+      <SignInForm />
+    </Suspense>
   );
 }

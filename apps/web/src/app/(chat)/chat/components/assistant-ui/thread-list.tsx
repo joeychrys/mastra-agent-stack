@@ -54,6 +54,7 @@ const ThreadListSkeleton: FC = () => {
     <div className="flex flex-col gap-0.5">
       {Array.from({ length: 5 }, (_, i) => (
         <div
+          // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton with fixed length, never reordered
           key={i}
           role="status"
           aria-label="Loading threads"

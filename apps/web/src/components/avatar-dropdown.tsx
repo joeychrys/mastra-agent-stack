@@ -1,12 +1,13 @@
 "use client";
 
+import { LogOut, Receipt, Shield, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -20,11 +21,9 @@ export default function AvatarDropdown(props: { session: Session | null }) {
   const { data } = client.useSession();
   const session = data || props.session;
 
-  // If no user is found, don't render the dropdown
   if (!session) return null;
   const user = session.user;
 
-  // Get the user's initial, ensuring name exists and is a string
   const userInitial =
     typeof user.name === "string" && user.name.trim() !== ""
       ? user.name.charAt(0).toUpperCase()
@@ -34,7 +33,6 @@ export default function AvatarDropdown(props: { session: Session | null }) {
     await client.signOut({
       fetchOptions: {
         onSuccess: () => {
-          // Redirect to sign-in page
           router.push("/sign-in");
           router.refresh();
         },
@@ -44,28 +42,44 @@ export default function AvatarDropdown(props: { session: Session | null }) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        asChild
-        className="ring-primary transition duration-300 ease-in-out hover:ring"
-      >
-        <Avatar className="shadow">
-          <AvatarFallback>{userInitial}</AvatarFallback>
-        </Avatar>
+      <DropdownMenuTrigger className="inline-flex size-8 items-center justify-center rounded-lg border border-input bg-transparent transition outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:border-input dark:bg-input/30 dark:hover:bg-input/50">
+        <span className="text-md font-medium">{userInitial}</span>
       </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DropdownMenuLabel>Account</DropdownMenuLabel>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col gap-0.5">
+              <p className="text-sm font-medium">{user.name}</p>
+              <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+            </div>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/account/profile">Profile</Link>
+        <DropdownMenuItem>
+          <Link href="/account/profile" className="flex w-full items-center gap-2">
+            <User className="h-3.5 w-3.5" />
+            Profile
+          </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/account/security">Security</Link>
+        <DropdownMenuItem>
+          <Link href="/account/security" className="flex w-full items-center gap-2">
+            <Shield className="h-3.5 w-3.5" />
+            Security
+          </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/account/billing">Billing</Link>
+        <DropdownMenuItem>
+          <Link href="/account/billing" className="flex w-full items-center gap-2">
+            <Receipt className="h-3.5 w-3.5" />
+            Billing
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut}>Sign Out</DropdownMenuItem>
+        <DropdownMenuItem onClick={handleSignOut} variant="destructive">
+          <div className="flex w-full items-center gap-2">
+            <LogOut className="h-3.5 w-3.5" />
+            Sign Out
+          </div>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

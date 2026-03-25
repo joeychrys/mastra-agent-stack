@@ -9,8 +9,8 @@ import { fetchThreadMessages, threadKeys } from "../lib/mastra-api";
  */
 export function useThreadMessages(threadId: string | undefined) {
   return useQuery({
-    queryKey: threadKeys.messages(threadId!),
-    queryFn: () => fetchThreadMessages(threadId!),
+    queryKey: threadKeys.messages(threadId ?? ""),
+    queryFn: () => fetchThreadMessages(threadId ?? ""),
     enabled: !!threadId,
     // Messages change as the conversation progresses — keep a shorter stale time
     staleTime: 5 * 1000,

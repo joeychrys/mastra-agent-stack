@@ -23,8 +23,8 @@ export function useThreads() {
 /** Fetch a single thread by ID. */
 export function useThread(threadId: string | undefined) {
   return useQuery({
-    queryKey: threadKeys.detail(threadId!),
-    queryFn: () => fetchThread(threadId!),
+    queryKey: threadKeys.detail(threadId ?? ""),
+    queryFn: () => fetchThread(threadId ?? ""),
     enabled: !!threadId,
   });
 }

@@ -45,6 +45,7 @@ ENV BETTER_AUTH_SECRET="build_placeholder"
 # Learn more here: https://nextjs.org/telemetry
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV=production
 
 RUN pnpm --filter @repo/web build
 
