@@ -13,7 +13,7 @@ import type * as React from "react";
 
 import type { EmailTemplateProps } from "@/lib/types";
 
-export const DeleteAccountEmail: React.FC<Readonly<EmailTemplateProps>> = ({ user, url }) => (
+export const DeleteAccountEmail: React.FC<Readonly<EmailTemplateProps>> = ({ url }) => (
   <Html>
     <Head />
     <Preview>Verify your account deletion</Preview>

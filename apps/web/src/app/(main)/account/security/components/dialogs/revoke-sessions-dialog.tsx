@@ -39,9 +39,7 @@ export default function RevokeSessionsDialog() {
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DialogTrigger asChild>
-        <Button variant="destructive">Revoke Sessions</Button>
-      </DialogTrigger>
+      <DialogTrigger render={<Button />}>Revoke Sessions</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Revoke Sessions</DialogTitle>

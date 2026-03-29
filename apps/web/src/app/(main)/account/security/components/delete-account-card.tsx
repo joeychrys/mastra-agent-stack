@@ -1,24 +1,20 @@
 import { OctagonX } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+
 import AccountDeletionDialog from "./dialogs/account-deletion-dialog";
 
 export default function DeleteAccountCard() {
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="mb-2 flex items-center gap-2">
-          <OctagonX className="h-5 w-5" />
-          <CardTitle className="text-lg font-medium">Delete Account</CardTitle>
-        </div>
-        <CardDescription>
-          Delete your account to permanently remove your account and all associated data.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Separator className="my-4" />
+    <div className="rounded-lg border border-border p-6">
+      <div className="flex items-center gap-3">
+        <OctagonX className="h-5 w-5 text-foreground" strokeWidth={1.5} />
+        <span className="font-medium">Delete Account</span>
+      </div>
+      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+        Delete your account to permanently remove your account and all associated data.
+      </p>
+      <div className="mt-5">
         <AccountDeletionDialog />
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

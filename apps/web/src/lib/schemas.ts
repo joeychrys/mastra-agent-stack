@@ -63,6 +63,10 @@ export const UsernameFormSchema = z.object({
   name: nameSchema,
 });
 
+export const ForgotPasswordFormSchema = z.object({
+  email: emailSchema,
+});
+
 export const ResetPasswordFormSchema = z
   .object({
     password: passwordSchema,

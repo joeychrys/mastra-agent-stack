@@ -22,11 +22,13 @@ export default async function ProfilePage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Profile details</h1>
-        <p className="text-muted-foreground text-sm">Manage your profile information.</p>
+        <h1 className="text-xl font-medium tracking-tight">Profile details</h1>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          Manage your profile information.
+        </p>
       </div>
 
-      <div className="space-y-6 rounded-lg p-4 sm:p-6">
+      <div className="space-y-6">
         <ProfileCard session={JSON.parse(JSON.stringify(session))} />
         <LinkedAccountsCard userAccounts={JSON.parse(JSON.stringify(userAccounts))} />
       </div>

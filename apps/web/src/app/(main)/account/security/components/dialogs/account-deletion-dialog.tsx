@@ -54,9 +54,7 @@ export default function AccountDeletionDialog() {
 
   return (
     <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <AlertDialogTrigger asChild>
-        <Button>Delete Account</Button>
-      </AlertDialogTrigger>
+      <AlertDialogTrigger render={<Button />}>Delete Account</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Account</AlertDialogTitle>

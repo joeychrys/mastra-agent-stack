@@ -31,7 +31,7 @@ export const mastra = new Mastra({
   scorers: { toolCallAppropriatenessScorer, completenessScorer, translationScorer },
   storage: new PostgresStore({
     id: "mastra-storage",
-    connectionString: process.env.DATABASE_URL!,
+    connectionString: process.env.DATABASE_URL ?? "",
   }),
   server: {
     middleware: [

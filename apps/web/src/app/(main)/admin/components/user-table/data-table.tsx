@@ -110,7 +110,7 @@ export function DataTable<TData, TValue>({
 
       {/* Always render pagination controls */}
       <div className="flex items-center justify-between">
-        <div className="text-muted-foreground text-sm">
+        <div className="text-sm text-muted-foreground">
           Showing {data.length > 0 ? paginationState.pageIndex * paginationState.pageSize + 1 : 0}-
           {Math.min(
             (paginationState.pageIndex + 1) * paginationState.pageSize,

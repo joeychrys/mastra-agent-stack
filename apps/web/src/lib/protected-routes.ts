@@ -6,7 +6,7 @@ export const protectedRoutes: ProtectedRoute[] = [
     roles: ["admin"],
   },
   {
-    path: "/dashboard",
+    path: "/chat",
     roles: ["user"],
   },
   {

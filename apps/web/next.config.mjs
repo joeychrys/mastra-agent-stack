@@ -8,7 +8,12 @@ const nextConfig = {
   output: "standalone",
   transpilePackages: ["@repo/shared-types"],
   turbopack: {
-    root: resolve(__dirname, "../.."),
+    // Set root to monorepo root only for production builds.
+    // In dev, this causes Turbopack to watch ~109K files across the entire
+    // monorepo (including node_modules, .mastra, .git), burning CPU at idle.
+    ...(process.env.NODE_ENV === "production" && {
+      root: resolve(__dirname, "../.."),
+    }),
   },
 };
 

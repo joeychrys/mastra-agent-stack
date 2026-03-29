@@ -18,7 +18,6 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
@@ -61,36 +60,26 @@ export function ThreadListSidebar({ ...props }: React.ComponentProps<typeof Side
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton size="lg" className="cursor-pointer">
-                  <Avatar className="size-8 rounded-lg">
-                    <AvatarFallback className="rounded-lg">{userInitial}</AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">{user?.name ?? "Guest"}</span>
-                    <span className="text-muted-foreground truncate text-xs">
-                      {user?.email ?? ""}
-                    </span>
-                  </div>
-                  <ChevronsUpDown className="ml-auto size-4" />
-                </SidebarMenuButton>
+              <DropdownMenuTrigger className="peer/menu-button group/menu-button flex h-12 w-full cursor-pointer items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground [&_svg]:size-4 [&_svg]:shrink-0">
+                <Avatar className="size-8 rounded-lg">
+                  <AvatarFallback className="rounded-lg">{userInitial}</AvatarFallback>
+                </Avatar>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">{user?.name ?? "Guest"}</span>
+                  <span className="text-muted-foreground truncate text-xs">
+                    {user?.email ?? ""}
+                  </span>
+                </div>
+                <ChevronsUpDown className="ml-auto size-4" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent
-                side="top"
-                align="start"
-                className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-              >
-                <DropdownMenuItem asChild>
-                  <Link href="/account/profile">
-                    <User className="mr-2 size-4" />
-                    Profile
-                  </Link>
+              <DropdownMenuContent side="top" align="start" className="min-w-56 rounded-lg">
+                <DropdownMenuItem render={<Link href="/account/profile" />}>
+                  <User className="mr-2 size-4" />
+                  Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/account/security">
-                    <Settings className="mr-2 size-4" />
-                    Settings
-                  </Link>
+                <DropdownMenuItem render={<Link href="/account/security" />}>
+                  <Settings className="mr-2 size-4" />
+                  Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>

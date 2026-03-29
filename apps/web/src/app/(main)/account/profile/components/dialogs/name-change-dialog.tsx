@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -48,7 +48,7 @@ export default function NameChangeDialog() {
         name: data.name,
       });
       toast.success("Profile updated successfully");
-      router.refresh(); // Refresh the page to show the updated profile
+      router.refresh();
       setDialogOpen(false);
     } catch (error: unknown) {
       let errorMessage = "Failed to update profile";
@@ -60,10 +60,9 @@ export default function NameChangeDialog() {
   }
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="mt-2 sm:mt-0 sm:ml-auto sm:flex-shrink-0">
-          Edit profile
-        </Button>
+      <DialogTrigger render={<Button variant="outline" size="sm" className="shrink-0 gap-1.5" />}>
+        <Pencil className="h-3.5 w-3.5" />
+        Edit
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>

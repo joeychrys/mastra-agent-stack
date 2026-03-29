@@ -28,11 +28,13 @@ export default async function SecurityPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Security</h1>
-        <p className="text-muted-foreground text-sm">Manage your account security settings.</p>
+        <h1 className="text-xl font-medium tracking-tight">Security</h1>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          Manage your account security settings.
+        </p>
       </div>
 
-      <div className="space-y-6 rounded-lg p-4 sm:p-6">
+      <div className="space-y-6">
         <EmailCard />
         {user?.user.emailVerified && isCredentialAccount && <PasswordCard user={user.user} />}
         <SessionsCard activeSessions={JSON.parse(JSON.stringify(activeSessions))} />

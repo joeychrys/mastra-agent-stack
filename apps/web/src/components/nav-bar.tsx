@@ -4,10 +4,15 @@ import { Suspense } from "react";
 
 import AvatarDropdown from "@/components/avatar-dropdown";
 import { MobileNav } from "@/components/mobile-nav";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/theme-toggle";
 import { auth } from "@/lib/auth";
 import type { Session } from "@/lib/types";
+
+const navLinks = [
+  { href: "/", label: "Home" },
+  { href: "/agents", label: "Agents" },
+  { href: "/pricing", label: "Pricing" },
+];
 
 export default async function NavBar() {
   const session: Session | null = await auth.api
@@ -20,42 +25,40 @@ export default async function NavBar() {
     });
 
   return (
-    <header className="bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 w-full backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-screen-2xl items-center justify-between px-4">
-        {/* Mobile menu */}
-        <MobileNav />
-
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-lg">
+      <div className="mx-auto flex h-14 max-w-screen-xl items-center px-4 sm:px-6">
         {/* Desktop navigation */}
-        <nav className="hidden items-center space-x-6 text-sm md:flex">
-          <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
-            Home
-          </Link>
-          <Link
-            href="/agents"
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Agents
-          </Link>
-          <Link
-            href="/pricing"
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Pricing
-          </Link>
+        <nav className="hidden items-center gap-1 md:flex">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              {link.label}
+            </Link>
+          ))}
         </nav>
 
         {/* Right side actions */}
-        <div className="flex items-center space-x-4">
+        <div className="ml-auto flex items-center gap-2">
+          <ModeToggle />
           {session ? (
-            <Suspense fallback={<div className="bg-muted h-8 w-8 animate-pulse rounded-full" />}>
+            <Suspense fallback={<div className="h-8 w-8 animate-pulse rounded-full bg-muted" />}>
               <AvatarDropdown session={JSON.parse(JSON.stringify(session))} />
             </Suspense>
           ) : (
-            <Button asChild variant="outline" size="sm">
-              <Link href="/sign-in">Sign In</Link>
-            </Button>
+            <Link
+              href="/sign-in"
+              className="inline-flex h-8 items-center justify-center rounded-lg border border-input bg-transparent px-2.5 text-sm font-medium transition outline-none hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:border-input dark:bg-input/30 dark:hover:bg-input/50"
+            >
+              Sign In
+            </Link>
           )}
-          <ThemeToggle />
+          {/* Mobile menu */}
+          <div className="md:hidden">
+            <MobileNav />
+          </div>
         </div>
       </div>
     </header>

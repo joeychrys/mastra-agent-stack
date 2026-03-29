@@ -2,38 +2,30 @@
 
 import { Fingerprint } from "lucide-react";
 
-import { columns } from "@/components/tables/sessions-table/columns";
-import { DataTable } from "@/components/tables/sessions-table/data-table";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { columns } from "@/app/(main)/account/security/components/sessions-table/columns";
+import { DataTable } from "@/app/(main)/account/security/components/sessions-table/data-table";
 import type { Session } from "@/lib/types";
 
 import RevokeSessionsDialog from "./dialogs/revoke-sessions-dialog";
 
 export default function SessionsCard(props: { activeSessions: Session["session"][] }) {
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="mb-2 flex items-center gap-2">
-          <Fingerprint className="h-5 w-5" />
-          <CardTitle className="text-lg font-medium">Active sessions</CardTitle>
-        </div>
-        <CardDescription>Manage your active sessions</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div className="rounded-lg border border-border p-6">
+      <div className="flex items-center gap-3">
+        <Fingerprint className="h-5 w-5 text-foreground" strokeWidth={1.5} />
+        <span className="font-medium">Active sessions</span>
+      </div>
+      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+        Manage your active sessions
+      </p>
+      <div className="mt-5">
         <DataTable columns={columns} data={props.activeSessions} />
-      </CardContent>
+      </div>
       {props.activeSessions.length > 1 && (
-        <CardFooter className="pt-0">
+        <div className="mt-4">
           <RevokeSessionsDialog />
-        </CardFooter>
+        </div>
       )}
-    </Card>
+    </div>
   );
 }
