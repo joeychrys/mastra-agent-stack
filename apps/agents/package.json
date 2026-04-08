@@ -15,21 +15,22 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@mastra/ai-sdk": "^1.1.3",
+    "@mastra/ai-sdk": "^1.3.2",
     "@mastra/auth": "^1.0.1",
-    "@mastra/core": "^1.12.0",
-    "@mastra/evals": "^1.1.2",
-    "@mastra/loggers": "^1.0.2",
-    "@mastra/memory": "^1.7.0",
-    "@mastra/observability": "^1.4.0",
-    "@mastra/pg": "^1.8.0",
+    "@mastra/core": "^1.23.0",
+    "@mastra/evals": "^1.2.1",
+    "@mastra/loggers": "^1.1.0",
+    "@mastra/memory": "^1.14.0",
+    "@mastra/observability": "^1.7.3",
+    "@mastra/pg": "^1.9.0",
+    "@mastra/server": "^1.23.0",
     "@repo/shared-types": "workspace:*",
     "jose": "^6.2.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^25.3.5",
-    "mastra": "^1.3.9",
+    "mastra": "^1.4.0",
     "typescript": "^5.9.3"
   }
 }

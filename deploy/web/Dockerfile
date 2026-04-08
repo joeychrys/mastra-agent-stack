@@ -14,6 +14,7 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/shared-types/package.json ./packages/shared-types/
+COPY packages/aui-mastra/package.json ./packages/aui-mastra/
 RUN pnpm install --frozen-lockfile --filter @repo/web...
 
 # 2. Rebuild the source code only when needed
@@ -22,6 +23,7 @@ WORKDIR /app
 COPY --from=deps /app/ ./
 COPY apps/web ./apps/web
 COPY packages/shared-types ./packages/shared-types
+COPY packages/aui-mastra ./packages/aui-mastra
 
 # Build-time environment variables
 # NEXT_PUBLIC_* use placeholder URLs that get replaced at runtime by entrypoint.sh
@@ -47,7 +49,7 @@ ENV BETTER_AUTH_SECRET="build_placeholder"
 ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV=production
 
-RUN pnpm --filter @repo/web build
+RUN pnpm --filter @repo/aui-mastra build && pnpm --filter @repo/web build
 
 # 3. Production image, copy all the files and run next
 FROM base AS runner

@@ -1,5 +1,7 @@
+"use client";
+
 import { Assistant } from "./assistant";
 
-export default function Home() {
+export default function ChatPage() {
   return <Assistant />;
 }
