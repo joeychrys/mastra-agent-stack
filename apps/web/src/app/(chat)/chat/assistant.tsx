@@ -1,91 +1,30 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
-import {
-  AssistantRuntimeProvider,
-  unstable_useRemoteThreadListRuntime,
-  useAuiState,
-} from "@assistant-ui/react";
-import { AssistantChatTransport, useAISDKRuntime } from "@assistant-ui/react-ai-sdk";
-import { useMemo } from "react";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
+import { AssistantRuntimeProvider } from "@assistant-ui/react";
+import { useMastraThreadListRuntime } from "@repo/aui-mastra";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Thread } from "./components/assistant-ui/thread";
 import { ThreadListSidebar } from "./components/assistant-ui/threadlist-sidebar";
 import { WeatherToolUI } from "./components/tools/weather-tool-ui";
 import { getAuthToken } from "./hooks/use-auth-token";
-import { MASTRA_BASE_URL, RESOURCE_ID } from "./lib/mastra-api";
-import {
-  createMastraHistoryAdapter,
-  createMastraThreadAdapter,
-  resolveThreadId,
-  resolveThreadIdAsync,
-} from "./lib/mastra-thread-adapter";
 
-const MASTRA_CHAT_URL = `${MASTRA_BASE_URL}/chat/weatherAgent`;
-
-function useMastraChatThreadRuntime() {
-  const threadId = useAuiState((s) => s.threadListItem.id);
-
-  const transport = useMemo(
-    () =>
-      new AssistantChatTransport({
-        api: MASTRA_CHAT_URL,
-        headers: async () => {
-          const token = await getAuthToken();
-          return { Authorization: `Bearer ${token}` };
-        },
-        prepareSendMessagesRequest: async (options) => {
-          // Await the pending initialize() if it's in flight — there is a
-          // race condition where this callback fires before the adapter's
-          // createThread() completes.
-          const resolved = await resolveThreadIdAsync(threadId);
-          return {
-            ...options,
-            body: {
-              ...options.body,
-              messages: options.messages,
-              trigger: options.trigger,
-              messageId: options.messageId,
-              metadata: options.requestMetadata,
-              memory: {
-                thread: resolved,
-                resource: RESOURCE_ID,
-              },
-            },
-          };
-        },
-      }),
-    [threadId],
-  );
-
-  const chat = useChat({
-    id: threadId,
-    transport,
-  });
-
-  const resolvedId = resolveThreadId(threadId);
-  const historyAdapter = useMemo(() => createMastraHistoryAdapter(resolvedId), [resolvedId]);
-
-  return useAISDKRuntime(chat, {
-    adapters: { history: historyAdapter },
-  });
-}
+const MASTRA_BASE_URL = process.env.NEXT_PUBLIC_MASTRA_URL ?? "http://localhost:4111";
+const AGENT_ID = "weatherAgent";
+const RESOURCE_ID = "authenticated-user";
 
 export const Assistant = () => {
-  const adapter = useMemo(() => createMastraThreadAdapter(), []);
-
-  const runtime = unstable_useRemoteThreadListRuntime({
-    runtimeHook: useMastraChatThreadRuntime,
-    adapter,
+  const runtime = useMastraThreadListRuntime({
+    baseUrl: MASTRA_BASE_URL,
+    agentId: AGENT_ID,
+    resourceId: RESOURCE_ID,
+    headers: async () => {
+      const token = await getAuthToken();
+      return { Authorization: `Bearer ${token}` };
+    },
+    titleAgent: {
+      enabled: true,
+      agentId: "summarizer-agent",
+    },
   });
 
   return (
@@ -97,20 +36,7 @@ export const Assistant = () => {
           <SidebarInset>
             <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
               <SidebarTrigger />
-              <Separator orientation="vertical" className="mr-2 h-4" />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="/agents" target="_blank" rel="noopener noreferrer">
-                      Agents
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden md:block" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>Weather Assistant</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
+              <h1 className="text-lg font-medium tracking-tight">Chat</h1>
             </header>
             <div className="flex-1 overflow-hidden">
               <Thread />

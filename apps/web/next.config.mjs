@@ -6,7 +6,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
-  transpilePackages: ["@repo/shared-types"],
+  transpilePackages: ["@repo/shared-types", "@repo/aui-mastra"],
   turbopack: {
     // Set root to monorepo root only for production builds.
     // In dev, this causes Turbopack to watch ~109K files across the entire

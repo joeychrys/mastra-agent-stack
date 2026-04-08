@@ -11,6 +11,7 @@ import type { Session } from "@/lib/types";
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/agents", label: "Agents" },
+  { href: "/workflows", label: "Workflows" },
   { href: "/pricing", label: "Pricing" },
 ];
 
@@ -26,7 +27,7 @@ export default async function NavBar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-lg">
-      <div className="mx-auto flex h-14 max-w-screen-xl items-center px-4 sm:px-6">
+      <div className="flex h-14 w-full items-center px-4">
         {/* Desktop navigation */}
         <nav className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) => (
@@ -41,8 +42,7 @@ export default async function NavBar() {
         </nav>
 
         {/* Right side actions */}
-        <div className="ml-auto flex items-center gap-2">
-          <ModeToggle />
+        <div className="ml-auto flex items-center gap-4">
           {session ? (
             <Suspense fallback={<div className="h-8 w-8 animate-pulse rounded-full bg-muted" />}>
               <AvatarDropdown session={JSON.parse(JSON.stringify(session))} />
@@ -55,6 +55,7 @@ export default async function NavBar() {
               Sign In
             </Link>
           )}
+          <ModeToggle />
           {/* Mobile menu */}
           <div className="md:hidden">
             <MobileNav />

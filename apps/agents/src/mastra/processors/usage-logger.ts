@@ -3,6 +3,7 @@ import type {
   ModelGenerationAttributes,
   SpanOutputProcessor,
 } from "@mastra/core/observability";
+import { SpanType } from "@mastra/core/observability";
 
 export class UsageLogger implements SpanOutputProcessor {
   name = "usage-logger";
@@ -21,7 +22,8 @@ export class UsageLogger implements SpanOutputProcessor {
     const model = attrs.model ?? "unknown";
     const provider = attrs.provider ?? "unknown";
     const finishReason = attrs.finishReason ?? "unknown";
-    const agentId = span.parent?.entityId ?? "unknown";
+    const agentRun = span.findParent(SpanType.AGENT_RUN);
+    const agentId = agentRun?.entityId ?? span.parent?.entityId ?? "unknown";
     const resourceId = (span.metadata?.resourceId as string | undefined) ?? "unknown";
 
     const total = (inputTokens ?? 0) + (outputTokens ?? 0);

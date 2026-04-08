@@ -29,6 +29,13 @@
         "next": "16"
       }
     },
+    "packageExtensions": {
+      "@assistant-ui/react-ai-sdk": {
+        "dependencies": {
+          "assistant-stream": ">=0.3.0"
+        }
+      }
+    },
     "onlyBuiltDependencies": [
       "better-sqlite3",
       "esbuild",
