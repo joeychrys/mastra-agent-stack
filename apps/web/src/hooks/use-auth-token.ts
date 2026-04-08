@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/app/(chat)/lib/query-client";
 import { authClient } from "@/lib/auth-client";
-import { queryClient } from "../lib/query-client";
 
 // ---------------------------------------------------------------------------
 // Query key
@@ -58,5 +58,7 @@ export async function getAuthToken(): Promise<string> {
     queryKey: authTokenKeys.token,
     queryFn: fetchToken,
     staleTime: 12 * 60 * 1000,
+    retry: 2, // fetchQuery defaults to 0 — retry for transient 401s during hydration
+    retryDelay: 500,
   });
 }

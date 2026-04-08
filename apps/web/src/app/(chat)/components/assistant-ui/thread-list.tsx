@@ -13,13 +13,6 @@ export const ThreadList: FC = () => {
   return (
     <ThreadListPrimitive.Root className="aui-root aui-thread-list-root flex flex-col">
       <ThreadListNew />
-      <button
-        type="button"
-        className="text-muted-foreground hover:text-foreground flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors"
-      >
-        <MessageCircle className="size-4" />
-        All chats
-      </button>
       <div className="mt-4 flex flex-col">
         <span className="text-muted-foreground mb-1 px-3 text-xs font-medium">Recents</span>
         <div className="flex flex-col gap-0.5">

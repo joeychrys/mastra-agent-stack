@@ -10,6 +10,8 @@ import {
 } from "@mastra/observability";
 import { PostgresStore } from "@mastra/pg";
 import { getAuthenticatedUser } from "@mastra/server/auth";
+import { activityPlannerAgent } from "./agents/activity-planner-agent";
+import { citySuggestionAgent } from "./agents/city-suggestion-agent";
 import { summarizerAgent } from "./agents/summarizer-agent";
 import { weatherAgent } from "./agents/weather-agent";
 import { JwksAuth } from "./auth/jwks-auth";
@@ -23,7 +25,7 @@ import { weatherWorkflow } from "./workflows/activity-planner";
 
 export const mastra = new Mastra({
   workflows: { weatherWorkflow },
-  agents: { weatherAgent, summarizerAgent },
+  agents: { weatherAgent, summarizerAgent, activityPlannerAgent, citySuggestionAgent },
   scorers: { toolCallAppropriatenessScorer, completenessScorer, translationScorer },
   storage: new PostgresStore({
     id: "mastra-storage",

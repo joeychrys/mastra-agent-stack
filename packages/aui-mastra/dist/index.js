@@ -478,18 +478,13 @@ function useMastraThreadListRuntime(config) {
 import { useChat as useChat3 } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useMemo as useMemo3 } from "react";
-var resolveHeadersSync = (headers) => {
-  if (!headers) return void 0;
-  if (typeof headers === "function") return headers();
-  return headers;
-};
 function useMastraWorkflow(config) {
-  const { baseUrl, workflowId, workflowPath = "/workflow", headers, mapInput } = config;
+  const { baseUrl, workflowId, workflowPath = "/workflow", headers, resourceId, mapInput } = config;
   const workflowUrl = `${baseUrl}${workflowPath}/${workflowId}`;
   const { messages, sendMessage, setMessages, status } = useChat3({
     transport: new DefaultChatTransport({
       api: workflowUrl,
-      headers: resolveHeadersSync(headers),
+      headers,
       prepareSendMessagesRequest: ({ messages: msgs }) => {
         const lastMessage = msgs[msgs.length - 1];
         const text = lastMessage?.parts?.find(
@@ -501,13 +496,15 @@ function useMastraWorkflow(config) {
             body: {
               runId: metadata.runId,
               step: metadata.step,
-              resumeData: metadata.resumeData
+              resumeData: metadata.resumeData,
+              ...resourceId && { resourceId }
             }
           };
         }
         return {
           body: {
-            inputData: mapInput(text ?? "")
+            inputData: mapInput(text ?? ""),
+            ...resourceId && { resourceId }
           }
         };
       }

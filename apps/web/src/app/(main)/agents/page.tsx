@@ -18,7 +18,7 @@ const agents: AgentCard[] = [
     description:
       "Get current weather conditions, forecasts, and climate data for any location worldwide.",
     icon: CloudSun,
-    href: "/chat",
+    href: "/weather-assistant",
     tags: ["Weather", "Forecasts"],
   },
 ];

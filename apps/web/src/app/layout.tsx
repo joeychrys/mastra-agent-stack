@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Providers } from "@/providers";
 import "./globals.css";
@@ -34,7 +35,9 @@ export default function RootLayout({
     >
       <body className="min-h-svh bg-background text-foreground">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-          <Providers>{children}</Providers>
+          <Providers>
+            <TooltipProvider>{children}</TooltipProvider>
+          </Providers>
         </ThemeProvider>
       </body>
     </html>

@@ -113,6 +113,16 @@ export type MastraWorkflowConfig = {
   headers?: HeadersConfig;
 
   /**
+   * Resource ID to associate the workflow run with (e.g. a user identifier).
+   * Sent in the request body so the server can tag the run for tracking/filtering.
+   *
+   * Note: The actual authenticated user ID is extracted from the JWT by server
+   * middleware and set on the request context — this field is for run-level
+   * resource association.
+   */
+  resourceId?: string;
+
+  /**
    * Transform the user's text message into the workflow's `inputData`.
    * Called inside `prepareSendMessagesRequest` with the latest message text.
    *

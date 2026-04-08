@@ -6,16 +6,16 @@ export const planActivities = createStep({
   description: "Suggests activities based on weather conditions",
   inputSchema: forecastSchema,
   outputSchema: activitiesPlanSchema,
-  execute: async ({ inputData, mastra }) => {
+  execute: async ({ inputData, mastra, requestContext }) => {
     const forecast = inputData;
 
     if (!forecast) {
       throw new Error("Forecast data not found");
     }
 
-    const agent = mastra?.getAgent("weatherAgent");
+    const agent = mastra?.getAgent("activityPlannerAgent");
     if (!agent) {
-      throw new Error("Weather agent not found");
+      throw new Error("Activity planner agent not found");
     }
 
     const prompt = `Based on this weather forecast for ${forecast.location}, suggest activities.
@@ -37,12 +37,7 @@ Guidelines:
 - Keep descriptions concise (one sentence)
 - "timing" is a time range, "note" is a weather consideration`;
 
-    const response = await agent.generate([
-      {
-        role: "user",
-        content: prompt,
-      },
-    ]);
+    const response = await agent.generate(prompt, { requestContext });
 
     const parsed = activitiesPlanSchema.parse(JSON.parse(response.text));
     return parsed;

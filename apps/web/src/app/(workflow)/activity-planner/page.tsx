@@ -4,7 +4,7 @@ import { useMastraWorkflow } from "@repo/aui-mastra";
 import { MapPin } from "lucide-react";
 import { useCallback, useState } from "react";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizeable";
-import { authClient } from "@/lib/auth-client";
+import { getAuthToken } from "@/hooks/use-auth-token";
 import { ChatPanel } from "./components/chat-panel";
 import type { CityOption } from "./components/city-select";
 import { WorkflowSteps } from "./components/workflow-steps";
@@ -18,10 +18,17 @@ export default function WorkflowPage() {
     useMastraWorkflow({
       baseUrl: MASTRA_BASE_URL,
       workflowId: "weather-workflow",
+      resourceId: "authenticated-user",
       mapInput: (text) => ({ city: text }),
-      headers: async () => {
-        const { data } = await authClient.token();
-        return { Authorization: `Bearer ${data?.token ?? ""}` };
+      headers: async (): Promise<Record<string, string>> => {
+        try {
+          const token = await getAuthToken();
+          return { Authorization: `Bearer ${token}` };
+        } catch {
+          // Prevent unhandled rejection — the API call will fail with 401
+          // and useChat will surface the error via `status`.
+          return {};
+        }
       },
     });
 

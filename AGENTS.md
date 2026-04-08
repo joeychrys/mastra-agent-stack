@@ -175,3 +175,4 @@ When using `assistant-ui`'s `unstable_useRemoteThreadListRuntime` with Mastra Me
 10. After schema changes: `make db-generate` then `make db-migrate`
 11. After fresh clone or `make db-reset`: run `make db-migrate`
 12. Shared types go in `packages/shared-types/` — both apps import from `@repo/shared-types`
+13. All agents must be registered in the Mastra `agents` map (`src/mastra/index.ts`) and retrieved via `mastra.getAgent()` in workflow steps — local agents created with `new Agent()` inline bypass the observability pipeline and will not appear in the usage logger or any span output processors

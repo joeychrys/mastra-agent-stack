@@ -6,7 +6,11 @@ export const protectedRoutes: ProtectedRoute[] = [
     roles: ["admin"],
   },
   {
-    path: "/chat",
+    path: "/weather-assistant",
+    roles: ["user"],
+  },
+  {
+    path: "/activity-planner",
     roles: ["user"],
   },
   {

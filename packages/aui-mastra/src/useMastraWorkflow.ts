@@ -71,7 +71,7 @@ export type MastraWorkflowReturn = {
  * ```
  */
 export function useMastraWorkflow(config: MastraWorkflowConfig): MastraWorkflowReturn {
-  const { baseUrl, workflowId, workflowPath = "/workflow", headers, mapInput } = config;
+  const { baseUrl, workflowId, workflowPath = "/workflow", headers, resourceId, mapInput } = config;
 
   const workflowUrl = `${baseUrl}${workflowPath}/${workflowId}`;
 
@@ -93,6 +93,7 @@ export function useMastraWorkflow(config: MastraWorkflowConfig): MastraWorkflowR
               runId: metadata.runId,
               step: metadata.step,
               resumeData: metadata.resumeData,
+              ...(resourceId && { resourceId }),
             },
           };
         }
@@ -101,6 +102,7 @@ export function useMastraWorkflow(config: MastraWorkflowConfig): MastraWorkflowR
         return {
           body: {
             inputData: mapInput(text ?? ""),
+            ...(resourceId && { resourceId }),
           },
         };
       },

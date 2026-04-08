@@ -1,22 +1,6 @@
-import { Agent } from "@mastra/core/agent";
 import { createStep } from "@mastra/core/workflows";
 import { z } from "zod";
 import { citySuggestionSchema } from "../schemas";
-
-const citySuggestionAgent = new Agent({
-  id: "city-suggestion",
-  name: "city-suggestion",
-  instructions: `You are a geography expert. Given a user's location query, determine the most likely cities they mean.
-
-Rules:
-- If the city is clearly unambiguous (e.g. "Chicago", "Tokyo", "London"), return exactly one result.
-- If the city name is ambiguous (e.g. "Springfield", "Portland", "Richmond"), return up to 3 of the most likely options ordered by population and prominence.
-- Always include the state/province/region and country for each suggestion.
-- Focus on well-known, populated cities that a real user would plausibly mean.
-- Never include obscure villages, tiny settlements, or places with negligible populations.
-- If the input is in another language, translate the location to English.`,
-  model: "openai/gpt-4o-mini",
-});
 
 const suggestionsOutputSchema = z.object({
   suggestions: z
@@ -38,7 +22,7 @@ export const suggestCities = createStep({
     options: z.array(citySuggestionSchema),
   }),
   resumeSchema: citySuggestionSchema,
-  execute: async ({ inputData, resumeData, suspend }) => {
+  execute: async ({ inputData, resumeData, suspend, mastra, requestContext }) => {
     // Resuming with a user-selected city
     if (resumeData) {
       return {
@@ -52,7 +36,12 @@ export const suggestCities = createStep({
       throw new Error("Input data not found");
     }
 
-    const response = await citySuggestionAgent.generate(
+    const agent = mastra?.getAgent("citySuggestionAgent");
+    if (!agent) {
+      throw new Error("City suggestion agent not found");
+    }
+
+    const response = await agent.generate(
       `What city or cities might the user mean by: "${inputData.city}"?
 
 If the answer is obvious, return just one. If ambiguous, return up to 3 ordered by likelihood.`,
@@ -60,6 +49,7 @@ If the answer is obvious, return just one. If ambiguous, return up to 3 ordered 
         structuredOutput: {
           schema: suggestionsOutputSchema,
         },
+        requestContext,
       },
     );
 
