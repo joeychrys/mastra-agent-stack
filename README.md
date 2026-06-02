@@ -24,12 +24,12 @@ A shared `docker-compose.yml` runs a local PostgreSQL 16 instance with two datab
 ## Quick Start
 
 ```bash
-# 1. Clone and setup (installs all deps, copies .env files)
-make setup
+# 1. Install all dependencies
+make install
 
-# 2. Add your API keys
-#    - apps/agents/.env  → OPENAI_API_KEY
-#    - apps/web/.env     → BETTER_AUTH_SECRET, Google OAuth creds, etc.
+# 2. Create your .env files from the examples, then add your API keys
+cp apps/agents/.env.example apps/agents/.env   # → OPENAI_API_KEY
+cp apps/web/.env.example apps/web/.env         # → BETTER_AUTH_SECRET, Google OAuth creds, etc.
 
 # 3. Start everything (PostgreSQL + backend + frontend)
 make dev
@@ -46,20 +46,28 @@ This starts:
 Run `make help` to see all targets. The most common:
 
 ```bash
-make setup           # first-time setup: install deps + copy .env files
-make dev             # start db + backend + frontend
-make dev-backend     # backend only (Mastra Studio)
-make dev-frontend    # frontend only (Next.js)
-make stop            # stop Docker services
-make db-reset        # destroy and recreate PostgreSQL volume
-make db-migrate      # run Drizzle migrations (web)
-make lint            # lint entire repo
-make lint-fix        # lint + auto-fix
-make typecheck       # type-check all projects (turbo, cached)
-make check           # lint + typecheck (pre-commit sanity check)
-make build           # production build all projects (turbo, cached)
-make nuke            # full reset (clean + remove deps + stop Docker)
+make install                          # install all dependencies
+make dev                              # start db + backend + frontend
+make dev app=web                      # start a single app (web | agents)
+make stop                             # stop Docker services
+make db-reset                         # destroy and recreate PostgreSQL volume
+make auth-db action=migrate  env=local  # migrate the betterauth DB (local)
+make auth-db action=generate env=local  # generate migration files from schema
+make auth-db action=migrate  env=prod   # migrate betterauth DB on prod (Tailscale)
+make auth-db action=studio   env=prod   # open Drizzle Studio against prod
+make lint                             # lint + format check (Biome)
+make fix                              # auto-fix lint + format issues
+make typecheck                        # type-check all projects (turbo, cached)
+make check                            # lint + typecheck (pre-commit sanity check)
+make build                            # production build all projects (turbo, cached)
+make build app=web                    # build a single app (web | agents)
+make nuke                             # full reset (clean + remove deps + stop Docker)
 ```
+
+Parameterized targets: `dev`, `build`, `typecheck` accept `app=web|agents`;
+`auth-db` **requires** `action=migrate|generate|push|studio` and `env=local|prod`
+(prod manages the betterauth database over Tailscale and only allows
+`migrate`/`studio`). Run `make help` for the full list.
 
 ## Project Structure
 
@@ -103,7 +111,12 @@ packages/shared-types/src/
 
 ## Environment Variables
 
-Both apps have `.env.example` files. `make setup` copies them automatically.
+Both apps have `.env.example` files. Copy each to `.env` and fill in your keys:
+
+```bash
+cp apps/agents/.env.example apps/agents/.env
+cp apps/web/.env.example apps/web/.env
+```
 
 **`apps/agents/.env`**
 
@@ -141,18 +154,55 @@ cd apps/web && pnpm dev
 
 ### Database Migrations
 
-After changing the Drizzle schema in `apps/web`:
+The `betterauth` database schema is managed with Drizzle (in `apps/web`) via the
+`auth-db` target, which requires both `action` and `env`. After changing the
+schema:
 
 ```bash
-make db-generate    # generate migration files
-make db-migrate     # apply migrations
+make auth-db action=generate env=local   # generate migration files
+make auth-db action=migrate  env=local   # apply migrations
 ```
 
 After a fresh clone or `make db-reset`:
 
 ```bash
-make db-migrate     # set up betterauth tables
+make auth-db action=migrate env=local    # set up betterauth tables
 ```
+
+### Production Database Migrations
+
+The production web image does **not** bundle any migration tooling — it ships as a
+pure Next.js runtime artifact. Migrations are applied from a trusted operator
+machine that reaches the production database over [Tailscale](https://tailscale.com),
+reusing the `drizzle-kit` toolchain already in `apps/web`.
+
+**One-time setup:** copy the template and fill in the production connection string
+(use the database host's Tailscale name or `100.x.y.z` IP):
+
+```bash
+cp deploy/db/.env.production.example deploy/db/.env.production
+# edit deploy/db/.env.production → set DATABASE_URL
+```
+
+`deploy/db/.env.production` is gitignored (`**/.env.production`) — never commit it.
+
+**Apply migrations / browse the database** (with Tailscale connected):
+
+```bash
+make auth-db action=migrate env=prod   # apply versioned migrations to prod
+make auth-db action=studio  env=prod   # open Drizzle Studio (https://local.drizzle.studio)
+```
+
+These map to `pnpm --filter @repo/web db:migrate:prod` / `db:studio:prod`.
+
+> **Guardrail:** against production only `migrate`/`studio` are permitted (the
+> `auth-db` target refuses `push`/`generate` when `env=prod`). `migrate` applies
+> reviewed, versioned SQL from `apps/web/src/drizzle/`. **Never run `db:push`
+> against production** — it diffs the schema directly and can drop or alter
+> columns without a migration file. Run migrations **before** deploying an image that
+> expects the new schema.
+
+See [`deploy/db/README.md`](deploy/db/README.md) for the full workflow.
 
 ### Linting and Formatting
 
@@ -160,7 +210,7 @@ A Husky + lint-staged pre-commit hook runs Biome on staged files automatically. 
 
 ```bash
 make lint           # check for issues
-make lint-fix       # auto-fix issues
+make fix            # auto-fix issues
 make typecheck      # type-check all projects (cached via Turborepo)
 ```
 

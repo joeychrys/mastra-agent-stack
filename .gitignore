@@ -7,3 +7,6 @@ node_modules
 # Lock files (only root pnpm-lock.yaml is tracked)
 package-lock.json
 yarn.lock
+
+# Production env files (operator-created, never committed; .example stays tracked)
+**/.env.production

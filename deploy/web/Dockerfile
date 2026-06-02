@@ -75,17 +75,10 @@ COPY --from=builder /app/apps/web/package.json ./package.json
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 
-# Drizzle tooling for on-demand database management via Dokploy terminal:
-#   drizzle-kit migrate | push | pull
-# Installed in an isolated directory so pnpm doesn't clobber the standalone node_modules.
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/drizzle.config.ts ./drizzle.config.ts
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/src/db/schema.ts ./src/db/schema.ts
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/src/drizzle ./src/drizzle
-RUN mkdir -p /app/drizzle-tools && \
-    cd /app/drizzle-tools && \
-    pnpm init && \
-    pnpm add drizzle-kit drizzle-orm pg
-ENV PATH="/app/drizzle-tools/node_modules/.bin:$PATH"
+# Database migrations are NOT run from this image. They are applied from a
+# trusted operator machine that reaches the production database over Tailscale,
+# using the drizzle-kit toolchain already present in apps/web.
+# See README.md ("Production Database Migrations") for the workflow.
 
 # Copy entrypoint script for runtime placeholder replacement
 # Must be done before switching to nextjs user, and needs proper ownership
