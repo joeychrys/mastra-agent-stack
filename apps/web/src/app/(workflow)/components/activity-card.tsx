@@ -57,8 +57,8 @@ function ActivitySection({
     <div>
       <p className={`mb-1 text-xs font-medium uppercase tracking-wider ${accent}`}>{title}</p>
       <div className="divide-y divide-border/50">
-        {items.map((item, i) => (
-          <ActivityItemRow key={i} item={item} />
+        {items.map((item) => (
+          <ActivityItemRow key={item.name} item={item} />
         ))}
       </div>
     </div>
@@ -90,8 +90,8 @@ export function ActivityCard({ data }: { data: unknown }) {
 
       {plan.considerations?.length > 0 && (
         <div className="border-t px-4 py-3 text-xs text-amber-600 dark:text-amber-400">
-          {plan.considerations.map((c, i) => (
-            <p key={i}>{c}</p>
+          {plan.considerations.map((c) => (
+            <p key={c}>{c}</p>
           ))}
         </div>
       )}

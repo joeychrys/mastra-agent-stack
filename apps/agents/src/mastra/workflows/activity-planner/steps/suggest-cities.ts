@@ -36,7 +36,7 @@ export const suggestCities = createStep({
       throw new Error("Input data not found");
     }
 
-    const agent = mastra?.getAgent("citySuggestionAgent");
+    const agent = mastra?.getAgentById("city-suggestion");
     if (!agent) {
       throw new Error("City suggestion agent not found");
     }

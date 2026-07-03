@@ -8,7 +8,7 @@ A full-stack AI agent application with a Mastra-powered backend and a Next.js ch
 | ------------------------ | -------------------- | ------------------------------ | ------------------------------------------------ |
 | `apps/agents/`           | `@repo/agents`       | Mastra AI agent backend        | Mastra, TypeScript, Zod, PostgreSQL              |
 | `apps/web/`              | `@repo/web`          | Next.js web app with chat UI   | Next.js 16, React 19, assistant-ui, Tailwind v4  |
-| `packages/shared-types/` | `@repo/shared-types` | Shared TypeScript types        | TypeScript                                       |
+| `packages/aui-mastra/`   | `@repo/aui-mastra`   | assistant-ui ↔ Mastra runtime glue | TypeScript, assistant-ui, TanStack Query     |
 
 A shared `docker-compose.yml` runs a local PostgreSQL 16 instance with two databases:
 
@@ -99,15 +99,13 @@ apps/web/src/app/
 
 The app uses route groups for layout isolation — `(auth)` pages have no navigation bar, `(main)` pages have one, and `(chat)` takes over the full viewport.
 
-### Shared Types (`packages/shared-types/`)
+### Cross-App Contracts
 
-```
-packages/shared-types/src/
-  weather.ts        # WeatherResult interface
-  threads.ts        # MastraThread, MastraThreadListResponse
-  agents.ts         # AGENT_IDS constants
-  index.ts          # Barrel export
-```
+There is no shared-types package. The Mastra REST API is the contract between the
+apps: structure data (workflows, agents, schemas) is fetched at runtime
+(`GET /api/workflows/:id`, `GET /api/agents`), and presentation types are owned by
+the component that renders the data. Agents are always referenced by their `id`
+(e.g. `"weather-agent"`), never the backend registration map key.
 
 ## Environment Variables
 

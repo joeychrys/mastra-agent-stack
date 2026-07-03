@@ -4,7 +4,7 @@ import {
   ThreadListItemPrimitive,
   ThreadListPrimitive,
 } from "@assistant-ui/react";
-import { MessageCircle, MoreHorizontalIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { MoreHorizontalIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import type { FC } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";

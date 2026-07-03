@@ -1,7 +1,6 @@
 "use client";
 
 import { makeAssistantToolUI } from "@assistant-ui/react";
-import type { WeatherResult } from "@repo/shared-types";
 import {
   CloudIcon,
   CloudRainIcon,
@@ -16,6 +15,22 @@ import {
   ZapIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+/**
+ * Output of the backend `weatherTool` (apps/agents weather-tool `outputSchema`).
+ * Presentation-owned: the tool result arrives as untyped JSON at runtime, so
+ * this type only describes what the card renders — the `render` guard below
+ * skips results that don't look like weather data.
+ */
+type WeatherResult = {
+  temperature: number;
+  feelsLike: number;
+  humidity: number;
+  windSpeed: number;
+  windGust: number;
+  conditions: string;
+  location: string;
+};
 
 function WeatherIcon({ conditions, className }: { conditions?: string; className?: string }) {
   if (!conditions) return <CloudIcon className={className} />;

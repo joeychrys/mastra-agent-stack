@@ -1,13 +1,13 @@
 // ---------------------------------------------------------------------------
-// @repo/aui-mastra — AI SDK wrapper for Mastra
+// @repo/aui-mastra — AI SDK wrapper for Mastra chat
 //
 // Thin, opinionated layer over the AI SDK that configures it for a Mastra
-// server.  Hooks for common use cases:
+// server.  Scope: general chat features only (assistant-ui runtimes, memory).
+// Workflow-specific hooks/types live in the consuming application.
 //
 //   useMastraThreadListRuntime — full thread-list + chat (assistant-ui)
 //   useMastraChat              — single-thread chat (assistant-ui runtime)
 //   useMastraMemory            — thread CRUD via /api/memory/* endpoints
-//   useMastraWorkflow          — workflow execution via workflowRoute
 //
 // Health monitoring is available via "@repo/aui-mastra/health" (server-only).
 // ---------------------------------------------------------------------------
@@ -22,10 +22,6 @@ export type {
   MastraMemoryConfig,
   MastraMemoryMessage,
   MastraThread,
-  MastraWorkflowConfig,
-  WorkflowData,
-  WorkflowStepResult,
-  WorkflowStepStatus,
 } from "./types";
 
 // Single-thread chat
@@ -37,10 +33,3 @@ export {
   type MastraThreadListConfig,
   useMastraThreadListRuntime,
 } from "./useMastraThreadListRuntime";
-
-// Workflow hook
-export {
-  type MastraWorkflowReturn,
-  type SuspendedStep,
-  useMastraWorkflow,
-} from "./useMastraWorkflow";

@@ -473,89 +473,11 @@ function useMastraThreadListRuntime(config) {
     adapter
   });
 }
-
-// src/useMastraWorkflow.ts
-import { useChat as useChat3 } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
-import { useMemo as useMemo3 } from "react";
-function useMastraWorkflow(config) {
-  const { baseUrl, workflowId, workflowPath = "/workflow", headers, resourceId, mapInput } = config;
-  const workflowUrl = `${baseUrl}${workflowPath}/${workflowId}`;
-  const { messages, sendMessage, setMessages, status } = useChat3({
-    transport: new DefaultChatTransport({
-      api: workflowUrl,
-      headers,
-      prepareSendMessagesRequest: ({ messages: msgs }) => {
-        const lastMessage = msgs[msgs.length - 1];
-        const text = lastMessage?.parts?.find(
-          (p) => p.type === "text"
-        )?.text;
-        const metadata = lastMessage?.metadata ?? {};
-        if (metadata.__resume) {
-          return {
-            body: {
-              runId: metadata.runId,
-              step: metadata.step,
-              resumeData: metadata.resumeData,
-              ...resourceId && { resourceId }
-            }
-          };
-        }
-        return {
-          body: {
-            inputData: mapInput(text ?? ""),
-            ...resourceId && { resourceId }
-          }
-        };
-      }
-    })
-  });
-  const { workflowData, runId, suspendedStep } = useMemo3(() => {
-    let latestData = null;
-    let latestRunId = "";
-    for (const msg of messages) {
-      if (msg.role !== "assistant") continue;
-      for (const part of msg.parts) {
-        if (part.type === "data-workflow") {
-          latestData = part.data;
-          latestRunId = part.id ?? "";
-        }
-      }
-    }
-    let suspended = null;
-    if (latestData?.status === "suspended") {
-      for (const [stepId, step] of Object.entries(latestData.steps)) {
-        if (step.status === "suspended" && step.suspendPayload) {
-          suspended = { stepId, payload: step.suspendPayload };
-        }
-      }
-    }
-    return { workflowData: latestData, runId: latestRunId, suspendedStep: suspended };
-  }, [messages]);
-  const sendInput = (text) => {
-    setMessages([]);
-    sendMessage({ text });
-  };
-  const resume = (rId, stepId, data, label) => {
-    setMessages([]);
-    sendMessage({
-      text: label || "Continue",
-      metadata: {
-        __resume: true,
-        runId: rId,
-        step: stepId,
-        resumeData: data
-      }
-    });
-  };
-  return { messages, status, sendInput, resume, workflowData, runId, suspendedStep };
-}
 export {
   createHistoryAdapter,
   memoryKeys,
   useMastraChat,
   useMastraMemory,
-  useMastraThreadListRuntime,
-  useMastraWorkflow
+  useMastraThreadListRuntime
 };
 //# sourceMappingURL=index.js.map

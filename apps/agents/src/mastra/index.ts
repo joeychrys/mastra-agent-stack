@@ -2,12 +2,7 @@ import { chatRoute, workflowRoute } from "@mastra/ai-sdk";
 import { Mastra } from "@mastra/core/mastra";
 import { MASTRA_RESOURCE_ID_KEY } from "@mastra/core/request-context";
 import { PinoLogger } from "@mastra/loggers";
-import {
-  CloudExporter,
-  DefaultExporter,
-  Observability,
-  SensitiveDataFilter,
-} from "@mastra/observability";
+import { MastraStorageExporter, Observability, SensitiveDataFilter } from "@mastra/observability";
 import { PostgresStore } from "@mastra/pg";
 import { getAuthenticatedUser } from "@mastra/server/auth";
 import { activityPlannerAgent } from "./agents/activity-planner-agent";
@@ -22,9 +17,10 @@ import {
   translationScorer,
 } from "./scorers/weather-scorer";
 import { weatherWorkflow } from "./workflows/activity-planner";
+import { demoWorkflow } from "./workflows/demo-workflow";
 
 export const mastra = new Mastra({
-  workflows: { weatherWorkflow },
+  workflows: { weatherWorkflow, demoWorkflow },
   agents: { weatherAgent, summarizerAgent, activityPlannerAgent, citySuggestionAgent },
   scorers: { toolCallAppropriatenessScorer, completenessScorer, translationScorer },
   storage: new PostgresStore({
@@ -32,7 +28,7 @@ export const mastra = new Mastra({
     connectionString: process.env.DATABASE_URL ?? "",
   }),
   server: {
-    auth: process.env.MASTRA_DEV !== "true" ? new JwksAuth() : undefined,
+    auth: process.env.ENABLE_AUTH === "true" ? new JwksAuth() : undefined,
     middleware: [
       async (c, next) => {
         const token = c.req.header("Authorization");
@@ -78,7 +74,7 @@ export const mastra = new Mastra({
     configs: {
       default: {
         serviceName: "mastra",
-        exporters: [new DefaultExporter(), new CloudExporter()],
+        exporters: [new MastraStorageExporter()],
         spanOutputProcessors: [new SensitiveDataFilter(), new UsageLogger()],
       },
     },

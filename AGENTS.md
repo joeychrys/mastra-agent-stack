@@ -10,7 +10,7 @@ pnpm workspace monorepo with Turborepo for task orchestration. Package manager: 
 | ----------------------- | --------------------- | ------------------------------------------- | ------------- |
 | `apps/agents/`          | `@repo/agents`        | Mastra AI agent backend (TypeScript, ESM)   | Node >= 22.13 |
 | `apps/web/`             | `@repo/web`           | Next.js 16 + assistant-ui chat (React 19)   | Node >= 18    |
-| `packages/shared-types/`| `@repo/shared-types`  | Shared TypeScript types and constants       | —             |
+| `packages/aui-mastra/`  | `@repo/aui-mastra`    | assistant-ui ↔ Mastra runtime glue (threads, memory) | —    |
 
 Root `docker-compose.yml` runs PostgreSQL 16 (`localhost:5432`, `user`/`password`) with two databases: `mastra` (agents) and `betterauth` (web). Root `Makefile` has shortcuts — run `make help`.
 
@@ -105,15 +105,13 @@ Environment: `apps/agents/.env` and `apps/web/.env` (both have `.env.example` �
 
 Biome is the sole linter/formatter for both projects. No ESLint or Prettier.
 
-## Shared Types (`packages/shared-types/`)
+## Cross-App Contracts (no shared types package)
 
-The `@repo/shared-types` package contains TypeScript interfaces and constants shared between apps:
+There is deliberately **no** shared-types package. The Mastra API is the contract between the apps:
 
-- `WeatherResult` — output shape of the get-weather tool
-- `MastraThread`, `MastraThreadListResponse` — Mastra Memory API response types
-- `AGENT_IDS` — canonical agent ID strings
-
-Import from `@repo/shared-types` in either app. The package uses `workspace:*` protocol — no publishing needed.
+- **Structure/config data** (workflows, steps, schemas, agent lists) is fetched at runtime from the Mastra REST API (`GET /api/workflows/:id`, `GET /api/agents`, ...). The workflow UI under `apps/web/src/app/(workflow)/` is the reference pattern.
+- **Presentation types** for tool/step outputs are owned by the component that renders them (e.g. `WeatherResult` in `weather-tool-ui.tsx`), with defensive runtime guards since results arrive as untyped JSON.
+- **Agent references always use the agent `id`** (e.g. `"weather-agent"`, as listed by `GET /api/agents`) — never the Mastra registration map key (e.g. `weatherAgent`). Backend lookups use `mastra.getAgentById("agent-id")`, not `mastra.getAgent(mapKey)`.
 
 ## Code Style — apps/agents/
 
@@ -147,7 +145,7 @@ import { weatherTool } from "../tools/weather-tool";
 
 TypeScript `strict: true`, JSX react-jsx. Biome for linting/formatting.
 
-**Imports:** `import type` for type-only. Path alias `@/*` maps to `src/`. **Chat route exception:** files under `src/app/(chat)/chat/` use relative imports internally; `@/` only for shared UI (`@/components/ui/*`, `@/lib/utils`).
+**Imports:** `import type` for type-only. Path alias `@/*` maps to `src/`. **Chat route exception:** files under `src/app/(chat)/` use relative imports internally; `@/` only for shared UI (`@/components/ui/*`, `@/lib/utils`).
 
 ```typescript
 import { cn } from "@/lib/utils";
@@ -172,7 +170,7 @@ import type { FC } from "react";
 
 ### Thread ID Race Condition (assistant-ui + Mastra Memory)
 
-**Files:** `apps/web/src/app/(chat)/chat/lib/mastra-thread-adapter.ts`, `apps/web/src/app/(chat)/chat/assistant.tsx`
+**File:** `packages/aui-mastra/src/useMastraThreadListRuntime.ts` (the fix originated in the old `(chat)/chat` route and now lives entirely in this package)
 
 When using `assistant-ui`'s `unstable_useRemoteThreadListRuntime` with Mastra Memory, a race condition during new thread creation causes duplicate threads with `__LOCALID_*` IDs in the database.
 
@@ -180,15 +178,12 @@ When using `assistant-ui`'s `unstable_useRemoteThreadListRuntime` with Mastra Me
 
 **How the fix works (do not remove or simplify):**
 
-1. `mastra-thread-adapter.ts` stores pending init promises in a module-level `pendingInits` Map, keyed by local ID.
-2. `assistant.tsx` uses `resolveThreadIdAsync()` in `prepareSendMessagesRequest` — awaits the pending promise to guarantee the UUID is available.
+1. Pending init promises are stored in a `pendingInits` Map (a `useRef` in the hook), keyed by local ID.
+2. `prepareSendMessagesRequest` awaits `resolveThreadIdAsync()` — guaranteeing the server UUID is available before the request fires.
 3. `id: options.id` is deliberately omitted from the request body — it's always the `__LOCALID_*` placeholder.
 4. `initialize()` is guarded against repeated calls via both `threadIdMap` (completed) and `pendingInits` (in-flight).
 
-**If `__LOCALID_*` threads appear in the database**, check that:
-- `prepareSendMessagesRequest` uses `await resolveThreadIdAsync(threadId)`, not `resolveThreadId(threadId)`
-- The request body does NOT include `id: options.id`
-- `initialize()` stores its promise in `pendingInits` before awaiting
+**If `__LOCALID_*` threads appear in the database**, check those four properties still hold in `useMastraThreadListRuntime.ts`.
 
 ## General Rules
 
@@ -204,5 +199,5 @@ When using `assistant-ui`'s `unstable_useRemoteThreadListRuntime` with Mastra Me
 10. After schema changes: `make auth-db action=generate env=local` then `make auth-db action=migrate env=local`
 11. After fresh clone or `make db-reset`: run `make auth-db action=migrate env=local`
 12. Prod migrations run from a Tailscale-connected operator machine via `make auth-db action=migrate env=prod` (reads gitignored `deploy/db/.env.production`) — never bundle migration tooling into the web image, and never `db:push` against prod
-13. Shared types go in `packages/shared-types/` — both apps import from `@repo/shared-types`
+13. No shared-types package: contract data comes from the Mastra API at runtime; presentation types are owned by the rendering component. Always reference agents by their `id` (`"weather-agent"`), never the registration map key (`weatherAgent`) — backend lookups use `mastra.getAgentById()`
 14. All agents must be registered in the Mastra `agents` map (`src/mastra/index.ts`) and retrieved via `mastra.getAgent()` in workflow steps — local agents created with `new Agent()` inline bypass the observability pipeline and will not appear in the usage logger or any span output processors

@@ -3,7 +3,6 @@ import { ThreadHistoryAdapter, AssistantRuntime } from '@assistant-ui/react';
 import { useAISDKRuntime } from '@assistant-ui/react-ai-sdk';
 import * as _tanstack_react_query from '@tanstack/react-query';
 import * as react from 'react';
-import { useChat } from '@ai-sdk/react';
 
 /** Headers that can be static, a sync function, or an async function. */
 type HeadersConfig = Record<string, string> | (() => Record<string, string>) | (() => Promise<Record<string, string>>);
@@ -66,64 +65,6 @@ type MastraMemoryMessage = {
     content: string;
     createdAt?: string;
     threadId: string;
-};
-/** Configuration for `useMastraWorkflow`. */
-type MastraWorkflowConfig = {
-    /** Base URL of the Mastra server. */
-    baseUrl: string;
-    /** Workflow ID to execute (must match a registered workflow on the server). */
-    workflowId: string;
-    /**
-     * Path prefix for the workflowRoute endpoint.
-     * The full URL is `${baseUrl}${workflowPath}/${workflowId}`.
-     * @default "/workflow"
-     */
-    workflowPath?: string;
-    /** Headers for authentication. */
-    headers?: HeadersConfig;
-    /**
-     * Resource ID to associate the workflow run with (e.g. a user identifier).
-     * Sent in the request body so the server can tag the run for tracking/filtering.
-     *
-     * Note: The actual authenticated user ID is extracted from the JWT by server
-     * middleware and set on the request context — this field is for run-level
-     * resource association.
-     */
-    resourceId?: string;
-    /**
-     * Transform the user's text message into the workflow's `inputData`.
-     * Called inside `prepareSendMessagesRequest` with the latest message text.
-     *
-     * @example
-     * ```ts
-     * mapInput: (text) => ({ city: text })
-     * ```
-     */
-    mapInput: (text: string) => Record<string, unknown>;
-};
-/** Status of an individual workflow step. */
-type WorkflowStepStatus = "running" | "success" | "failed" | "suspended" | "waiting";
-/** Result of an individual workflow step from the `data-workflow` stream part. */
-type WorkflowStepResult = {
-    name: string;
-    status: WorkflowStepStatus;
-    input: Record<string, unknown> | null;
-    output: unknown | null;
-    suspendPayload: Record<string, unknown> | null;
-    resumePayload: Record<string, unknown> | null;
-};
-/** The `data` field inside a `data-workflow` message part. */
-type WorkflowData = {
-    name: string;
-    status: string;
-    steps: Record<string, WorkflowStepResult>;
-    output: {
-        usage: {
-            inputTokens: number;
-            outputTokens: number;
-            totalTokens: number;
-        };
-    } | null;
 };
 
 /**
@@ -332,55 +273,4 @@ type MastraThreadListConfig = {
  */
 declare function useMastraThreadListRuntime(config: MastraThreadListConfig): _assistant_ui_react.AssistantRuntime;
 
-/** A workflow step that has suspended and is waiting for user input. */
-type SuspendedStep = {
-    /** The step ID (e.g. "resolve-city"). */
-    stepId: string;
-    /** The suspend payload sent by the step. */
-    payload: Record<string, unknown>;
-};
-type MastraWorkflowReturn = {
-    /** Raw messages from useChat. Render these manually. */
-    messages: ReturnType<typeof useChat>["messages"];
-    /** Chat status — "ready", "streaming", "error", etc. */
-    status: ReturnType<typeof useChat>["status"];
-    /**
-     * Start the workflow with a text input.
-     * The text is transformed via `mapInput` into `inputData`.
-     */
-    sendInput: (text: string) => void;
-    /**
-     * Resume a suspended workflow step.
-     *
-     * @param runId   — the workflow run ID (from `runId` in this return)
-     * @param stepId  — the step that suspended (from `suspendedStep.stepId`)
-     * @param data    — the resume payload matching the step's `resumeSchema`
-     * @param label   — optional text shown as the user message
-     */
-    resume: (runId: string, stepId: string, data: unknown, label?: string) => void;
-    /** The latest workflow data snapshot (derived from messages). */
-    workflowData: WorkflowData | null;
-    /** The current workflow run ID. */
-    runId: string;
-    /** The currently suspended step, if any. */
-    suspendedStep: SuspendedStep | null;
-};
-/**
- * Connect to a Mastra workflow via `useChat` + `DefaultChatTransport`.
- *
- * Returns raw chat state with workflow-specific helpers for suspend/resume.
- * Render messages manually — this does NOT use assistant-ui.
- *
- * @example
- * ```tsx
- * const { messages, status, sendInput, resume, workflowData, suspendedStep, runId } =
- *   useMastraWorkflow({
- *     baseUrl: "http://localhost:4111",
- *     workflowId: "weather-workflow",
- *     mapInput: (text) => ({ city: text }),
- *   });
- * ```
- */
-declare function useMastraWorkflow(config: MastraWorkflowConfig): MastraWorkflowReturn;
-
-export { type HeadersConfig, type HistoryAdapterConfig, type MastraChatConfig, type MastraChatMemoryConfig, type MastraChatRuntimeOptions, type MastraMemoryConfig, type MastraMemoryMessage, type MastraThread, type MastraThreadListConfig, type MastraWorkflowConfig, type MastraWorkflowReturn, type SuspendedStep, type WorkflowData, type WorkflowStepResult, type WorkflowStepStatus, createHistoryAdapter, memoryKeys, useMastraChat, useMastraMemory, useMastraThreadListRuntime, useMastraWorkflow };
+export { type HeadersConfig, type HistoryAdapterConfig, type MastraChatConfig, type MastraChatMemoryConfig, type MastraChatRuntimeOptions, type MastraMemoryConfig, type MastraMemoryMessage, type MastraThread, type MastraThreadListConfig, createHistoryAdapter, memoryKeys, useMastraChat, useMastraMemory, useMastraThreadListRuntime };

@@ -13,7 +13,7 @@ export const planActivities = createStep({
       throw new Error("Forecast data not found");
     }
 
-    const agent = mastra?.getAgent("activityPlannerAgent");
+    const agent = mastra?.getAgentById("activity-planner");
     if (!agent) {
       throw new Error("Activity planner agent not found");
     }

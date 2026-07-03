@@ -18,7 +18,9 @@ import { ThreadListSidebar } from "../components/assistant-ui/threadlist-sidebar
 import { WeatherToolUI } from "./components/tools/weather-tool-ui";
 
 const MASTRA_BASE_URL = process.env.NEXT_PUBLIC_MASTRA_URL ?? "http://localhost:4111";
-const AGENT_ID = "weatherAgent";
+// Always the agent's `id` (as listed by GET /api/agents) — never the Mastra
+// registration map key (e.g. "weatherAgent"), which also resolves but drifts.
+const AGENT_ID = "weather-agent";
 const RESOURCE_ID = "authenticated-user";
 
 export const Assistant = () => {
