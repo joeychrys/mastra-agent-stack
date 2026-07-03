@@ -3,8 +3,8 @@
 import { useChat } from "@ai-sdk/react";
 import type { AssistantRuntime } from "@assistant-ui/react";
 import { AssistantChatTransport, useAISDKRuntime } from "@assistant-ui/react-ai-sdk";
-import { useMemo } from "react";
-import { normaliseHeaders } from "./internal/fetch";
+import { useMemo, useRef } from "react";
+import { resolveHeaders } from "./internal/fetch";
 import type { MastraChatConfig } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -49,29 +49,38 @@ export function useMastraChat(
   const { baseUrl, agentId, chatPath = "/chat", headers, memory, chatId, runtimeOptions } = config;
 
   const chatUrl = `${baseUrl}${chatPath}/${agentId}`;
-  const resolvedHeaders = normaliseHeaders(headers);
+
+  // Callers typically pass `headers` as an inline (async) function whose
+  // identity changes every render. Read it through a ref so the transport
+  // isn't recreated per render — the thunk resolves at request time, which
+  // also guarantees the latest headers are used (not the first render's).
+  const headersRef = useRef(headers);
+  headersRef.current = headers;
+
+  const threadId = memory?.threadId;
+  const resourceId = memory?.resourceId;
+  const hasMemory = memory !== undefined;
 
   const transport = useMemo(
     () =>
       new AssistantChatTransport({
         api: chatUrl,
-        headers: resolvedHeaders,
-        ...(memory && {
+        headers: () => resolveHeaders(headersRef.current),
+        ...(hasMemory && {
           prepareSendMessagesRequest: async (options) => ({
             ...options,
             body: {
               ...options.body,
               messages: options.messages,
               memory: {
-                thread: memory.threadId,
-                resource: memory.resourceId,
+                thread: threadId,
+                resource: resourceId,
               },
             },
           }),
         }),
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refs are stable
-    [chatUrl, memory?.threadId, memory?.resourceId],
+    [chatUrl, hasMemory, threadId, resourceId],
   );
 
   const chat = useChat({

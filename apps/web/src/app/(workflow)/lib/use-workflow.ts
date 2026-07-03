@@ -25,10 +25,14 @@ export type MastraWorkflowReturn = {
   status: ReturnType<typeof useChat>["status"];
 
   /**
-   * Start the workflow with a text input.
-   * The text is transformed via `mapInput` into `inputData`.
+   * Start the workflow.
+   *
+   * - `sendInput("Dallas")` — plain text, transformed via `mapInput` into
+   *   `inputData`.
+   * - `sendInput({ city: "Dallas" }, "Dallas")` — structured values sent as
+   *   `inputData` verbatim; the optional label is shown as the user message.
    */
-  sendInput: (text: string) => void;
+  sendInput: (input: string | Record<string, unknown>, label?: string) => void;
 
   /**
    * Resume a suspended workflow step.
@@ -71,7 +75,14 @@ export type MastraWorkflowReturn = {
  * ```
  */
 export function useMastraWorkflow(config: MastraWorkflowConfig): MastraWorkflowReturn {
-  const { baseUrl, workflowId, workflowPath = "/workflow", headers, resourceId, mapInput } = config;
+  const {
+    baseUrl,
+    workflowId,
+    workflowPath = "/workflow",
+    headers,
+    resourceId,
+    mapInput = (text: string) => ({ input: text }),
+  } = config;
 
   const workflowUrl = `${baseUrl}${workflowPath}/${workflowId}`;
 
@@ -98,7 +109,17 @@ export function useMastraWorkflow(config: MastraWorkflowConfig): MastraWorkflowR
           };
         }
 
-        // Normal flow — map text to inputData
+        // Structured flow — metadata carries the inputData verbatim
+        if (metadata.__input) {
+          return {
+            body: {
+              inputData: metadata.__input,
+              ...(resourceId && { resourceId }),
+            },
+          };
+        }
+
+        // Plain-text flow — map text to inputData
         return {
           body: {
             inputData: mapInput(text ?? ""),
@@ -136,9 +157,19 @@ export function useMastraWorkflow(config: MastraWorkflowConfig): MastraWorkflowR
     return { workflowData: latestData, runId: latestRunId, suspendedStep: suspended };
   }, [messages]);
 
-  const sendInput = (text: string) => {
+  const sendInput = (input: string | Record<string, unknown>, label?: string) => {
     setMessages([]);
-    sendMessage({ text });
+    if (typeof input === "string") {
+      sendMessage({ text: input });
+      return;
+    }
+    // Structured input: the label doubles as the visible user message; fall
+    // back to the first string value so run labels stay meaningful.
+    const fallback = Object.values(input).find((v): v is string => typeof v === "string");
+    sendMessage({
+      text: label ?? fallback ?? "Run",
+      metadata: { __input: input },
+    });
   };
 
   const resume = (rId: string, stepId: string, data: unknown, label?: string) => {

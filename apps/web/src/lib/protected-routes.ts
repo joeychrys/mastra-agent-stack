@@ -10,7 +10,7 @@ export const protectedRoutes: ProtectedRoute[] = [
     roles: ["user"],
   },
   {
-    path: "/activity-planner",
+    path: "/workflows/*",
     roles: ["user"],
   },
   {

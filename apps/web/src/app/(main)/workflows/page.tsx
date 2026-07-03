@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { ArrowRight, MapPin } from "lucide-react";
+import { ArrowRight, GitBranch, MapPin } from "lucide-react";
 import Link from "next/link";
 
 type WorkflowCard = {
@@ -13,13 +13,22 @@ type WorkflowCard = {
 
 const workflows: WorkflowCard[] = [
   {
-    id: "activity-planner",
+    id: "weather-workflow",
     name: "Activity Planner",
     description:
       "Get a weather-aware activity plan for any city. Resolves locations, fetches forecasts, and suggests morning, afternoon, and indoor activities.",
     icon: MapPin,
-    href: "/activity-planner",
+    href: "/workflows/weather-workflow",
     tags: ["Weather", "Activities", "Planning"],
+  },
+  {
+    id: "demo-workflow",
+    name: "Control-Flow Demo",
+    description:
+      "Test workflow exercising parallel fan-out, conditional branching, and a human-review suspend step. No LLM calls — useful for checking graph rendering.",
+    icon: GitBranch,
+    href: "/workflows/demo-workflow",
+    tags: ["Parallel", "Branch", "Suspend"],
   },
 ];
 

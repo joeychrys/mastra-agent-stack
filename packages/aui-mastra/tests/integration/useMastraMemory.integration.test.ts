@@ -9,6 +9,8 @@ import { useMastraMemory } from "../../src/useMastraMemory";
 // ---------------------------------------------------------------------------
 
 const BASE_URL = "http://localhost:4111";
+// Always the agent's `id` (as listed by GET /api/agents), never the map key.
+const AGENT_ID = "weather-agent";
 const RESOURCE_ID = "test-user";
 
 function createWrapper() {
@@ -70,7 +72,7 @@ describe("useMastraMemory — TanStack Query integration", () => {
 
     const { Wrapper } = createWrapper();
     const { result } = renderHook(
-      () => useMastraMemory({ baseUrl: BASE_URL, resourceId: RESOURCE_ID }),
+      () => useMastraMemory({ baseUrl: BASE_URL, agentId: AGENT_ID, resourceId: RESOURCE_ID }),
       { wrapper: Wrapper },
     );
 
@@ -83,7 +85,7 @@ describe("useMastraMemory — TanStack Query integration", () => {
     expect(result.current.threads.data?.[0]?.id).toBe("thread-1");
 
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/memory/threads?resourceId="),
+      expect.stringContaining(`/api/memory/threads?agentId=${AGENT_ID}&resourceId=${RESOURCE_ID}`),
       expect.objectContaining({
         headers: expect.objectContaining({ "Content-Type": "application/json" }),
       }),
@@ -120,18 +122,19 @@ describe("useMastraMemory — TanStack Query integration", () => {
 
     const { Wrapper } = createWrapper();
     const { result } = renderHook(
-      () => useMastraMemory({ baseUrl: BASE_URL, resourceId: RESOURCE_ID }),
+      () => useMastraMemory({ baseUrl: BASE_URL, agentId: AGENT_ID, resourceId: RESOURCE_ID }),
       { wrapper: Wrapper },
     );
 
     await waitFor(() => expect(result.current.threads.isSuccess).toBe(true));
 
-    // Set up mocks for create + refetch
+    // Set up mocks for create + refetch. POST /api/memory/threads returns the
+    // created thread object directly (not wrapped) — verified against the API.
     fetchMock.mockResolvedValueOnce({
       ok: true,
       status: 200,
       headers: new Headers({ "content-length": "100" }),
-      json: async () => ({ thread: newThread }),
+      json: async () => newThread,
     } as Response);
 
     fetchMock.mockResolvedValueOnce({
@@ -201,13 +204,13 @@ describe("useMastraMemory — TanStack Query integration", () => {
         } as Response;
       }
 
-      // Single thread detail
+      // Single thread detail — returned directly (not wrapped)
       if (url.includes("/threads/thread-1")) {
         return {
           ok: true,
           status: 200,
           headers: new Headers({ "content-length": "100" }),
-          json: async () => ({ thread: threadOne }),
+          json: async () => threadOne,
         } as Response;
       }
 
@@ -216,7 +219,7 @@ describe("useMastraMemory — TanStack Query integration", () => {
 
     const { Wrapper } = createWrapper();
     const { result } = renderHook(
-      () => useMastraMemory({ baseUrl: BASE_URL, resourceId: RESOURCE_ID }),
+      () => useMastraMemory({ baseUrl: BASE_URL, agentId: AGENT_ID, resourceId: RESOURCE_ID }),
       { wrapper: Wrapper },
     );
 
@@ -261,7 +264,7 @@ describe("useMastraMemory — TanStack Query integration", () => {
 
     const { Wrapper } = createWrapper();
     const { result } = renderHook(
-      () => useMastraMemory({ baseUrl: BASE_URL, resourceId: RESOURCE_ID }),
+      () => useMastraMemory({ baseUrl: BASE_URL, agentId: AGENT_ID, resourceId: RESOURCE_ID }),
       { wrapper: Wrapper },
     );
 
@@ -270,18 +273,16 @@ describe("useMastraMemory — TanStack Query integration", () => {
     // Messages query should not fire yet (no threadId)
     expect(result.current.messages.fetchStatus).toBe("idle");
 
-    // Mock thread detail + messages fetches
+    // Mock thread detail + messages fetches (detail is returned directly)
     fetchMock.mockResolvedValueOnce({
       ok: true,
       status: 200,
       headers: new Headers({ "content-length": "100" }),
       json: async () => ({
-        thread: {
-          id: "thread-1",
-          resourceId: RESOURCE_ID,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
+        id: "thread-1",
+        resourceId: RESOURCE_ID,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       }),
     } as Response);
 
