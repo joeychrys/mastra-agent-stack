@@ -3,7 +3,7 @@
 /**
  * Full thread-list runtime for Mastra Memory.
  *
- * Wraps `unstable_useRemoteThreadListRuntime` from assistant-ui with a
+ * Wraps `useRemoteThreadListRuntime` from assistant-ui with a
  * `RemoteThreadListAdapter` backed by the Mastra memory API.  Handles:
  *
  * - Thread list (list, fetch, rename, delete)
@@ -36,8 +36,8 @@
  */
 
 import { useChat } from "@ai-sdk/react";
-import type { unstable_RemoteThreadListAdapter as RemoteThreadListAdapter } from "@assistant-ui/react";
-import { unstable_useRemoteThreadListRuntime, useAuiState } from "@assistant-ui/react";
+import type { RemoteThreadListAdapter } from "@assistant-ui/react";
+import { useAuiState, useRemoteThreadListRuntime } from "@assistant-ui/react";
 import { AssistantChatTransport, useAISDKRuntime } from "@assistant-ui/react-ai-sdk";
 import { createAssistantStream } from "assistant-stream";
 import { useMemo, useRef } from "react";
@@ -396,7 +396,7 @@ function createThreadRuntimeHook(
 /**
  * Full thread-list runtime for a Mastra agent with memory.
  *
- * Combines `unstable_useRemoteThreadListRuntime` with a Mastra-backed
+ * Combines `useRemoteThreadListRuntime` with a Mastra-backed
  * adapter and per-thread chat runtime.  The returned `AssistantRuntime`
  * drives both the thread list sidebar (`ThreadListPrimitive`) and the
  * active conversation (`Thread`).
@@ -418,7 +418,7 @@ export function useMastraThreadListRuntime(config: MastraThreadListConfig) {
     [threadIdMap, pendingInits],
   );
 
-  return unstable_useRemoteThreadListRuntime({
+  return useRemoteThreadListRuntime({
     runtimeHook,
     adapter,
   });

@@ -1,5 +1,5 @@
 import {
-  AssistantIf,
+  AuiIf,
   ThreadListItemMorePrimitive,
   ThreadListItemPrimitive,
   ThreadListPrimitive,
@@ -16,12 +16,12 @@ export const ThreadList: FC = () => {
       <div className="mt-4 flex flex-col">
         <span className="text-muted-foreground mb-1 px-3 text-xs font-medium">Recents</span>
         <div className="flex flex-col gap-0.5">
-          <AssistantIf condition={({ threads }) => threads.isLoading}>
+          <AuiIf condition={({ threads }) => threads.isLoading}>
             <ThreadListSkeleton />
-          </AssistantIf>
-          <AssistantIf condition={({ threads }) => !threads.isLoading}>
+          </AuiIf>
+          <AuiIf condition={({ threads }) => !threads.isLoading}>
             <ThreadListPrimitive.Items components={{ ThreadListItem }} />
-          </AssistantIf>
+          </AuiIf>
         </div>
       </div>
     </ThreadListPrimitive.Root>

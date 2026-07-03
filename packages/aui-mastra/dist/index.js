@@ -86,31 +86,34 @@ function createHistoryAdapter(config) {
 // src/useMastraChat.ts
 import { useChat } from "@ai-sdk/react";
 import { AssistantChatTransport, useAISDKRuntime } from "@assistant-ui/react-ai-sdk";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 function useMastraChat(config) {
   const { baseUrl, agentId, chatPath = "/chat", headers, memory, chatId, runtimeOptions } = config;
   const chatUrl = `${baseUrl}${chatPath}/${agentId}`;
-  const resolvedHeaders = normaliseHeaders(headers);
+  const headersRef = useRef(headers);
+  headersRef.current = headers;
+  const threadId = memory?.threadId;
+  const resourceId = memory?.resourceId;
+  const hasMemory = memory !== void 0;
   const transport = useMemo(
     () => new AssistantChatTransport({
       api: chatUrl,
-      headers: resolvedHeaders,
-      ...memory && {
+      headers: () => resolveHeaders(headersRef.current),
+      ...hasMemory && {
         prepareSendMessagesRequest: async (options) => ({
           ...options,
           body: {
             ...options.body,
             messages: options.messages,
             memory: {
-              thread: memory.threadId,
-              resource: memory.resourceId
+              thread: threadId,
+              resource: resourceId
             }
           }
         })
       }
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refs are stable
-    [chatUrl, memory?.threadId, memory?.resourceId]
+    [chatUrl, hasMemory, threadId, resourceId]
   );
   const chat = useChat({
     ...chatId && { id: chatId },
@@ -266,10 +269,10 @@ function useMastraMemory(config) {
 
 // src/useMastraThreadListRuntime.ts
 import { useChat as useChat2 } from "@ai-sdk/react";
-import { unstable_useRemoteThreadListRuntime, useAuiState } from "@assistant-ui/react";
+import { useAuiState, useRemoteThreadListRuntime } from "@assistant-ui/react";
 import { AssistantChatTransport as AssistantChatTransport2, useAISDKRuntime as useAISDKRuntime2 } from "@assistant-ui/react-ai-sdk";
 import { createAssistantStream } from "assistant-stream";
-import { useMemo as useMemo2, useRef } from "react";
+import { useMemo as useMemo2, useRef as useRef2 } from "react";
 function resolveThreadId(threadId, map) {
   return map.get(threadId) ?? threadId;
 }
@@ -456,10 +459,10 @@ function createThreadRuntimeHook(configRef, threadIdMap, pendingInits) {
   };
 }
 function useMastraThreadListRuntime(config) {
-  const configRef = useRef(config);
+  const configRef = useRef2(config);
   configRef.current = config;
-  const threadIdMap = useRef(/* @__PURE__ */ new Map()).current;
-  const pendingInits = useRef(/* @__PURE__ */ new Map()).current;
+  const threadIdMap = useRef2(/* @__PURE__ */ new Map()).current;
+  const pendingInits = useRef2(/* @__PURE__ */ new Map()).current;
   const runtimeHook = useMemo2(
     () => createThreadRuntimeHook(configRef, threadIdMap, pendingInits),
     [threadIdMap, pendingInits]
@@ -468,7 +471,7 @@ function useMastraThreadListRuntime(config) {
     () => createThreadListAdapter(configRef, threadIdMap, pendingInits),
     [threadIdMap, pendingInits]
   );
-  return unstable_useRemoteThreadListRuntime({
+  return useRemoteThreadListRuntime({
     runtimeHook,
     adapter
   });

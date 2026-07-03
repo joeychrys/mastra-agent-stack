@@ -204,9 +204,9 @@ declare const memoryKeys: {
 declare function useMastraMemory(config: MastraMemoryConfig): {
     currentThreadId: string | null;
     setCurrentThreadId: react.Dispatch<react.SetStateAction<string | null>>;
-    threads: _tanstack_react_query.UseQueryResult<MastraThread[], Error>;
-    thread: _tanstack_react_query.UseQueryResult<MastraThread, Error>;
-    messages: _tanstack_react_query.UseQueryResult<MastraMemoryMessage[], Error>;
+    threads: _tanstack_react_query.UseQueryResult<NoInfer<MastraThread[]>, Error>;
+    thread: _tanstack_react_query.UseQueryResult<NoInfer<MastraThread>, Error>;
+    messages: _tanstack_react_query.UseQueryResult<NoInfer<MastraMemoryMessage[]>, Error>;
     createThread: _tanstack_react_query.UseMutationResult<MastraThread, Error, {
         metadata?: Record<string, unknown>;
     } | undefined, unknown>;
@@ -266,7 +266,7 @@ type MastraThreadListConfig = {
 /**
  * Full thread-list runtime for a Mastra agent with memory.
  *
- * Combines `unstable_useRemoteThreadListRuntime` with a Mastra-backed
+ * Combines `useRemoteThreadListRuntime` with a Mastra-backed
  * adapter and per-thread chat runtime.  The returned `AssistantRuntime`
  * drives both the thread list sidebar (`ThreadListPrimitive`) and the
  * active conversation (`Thread`).
