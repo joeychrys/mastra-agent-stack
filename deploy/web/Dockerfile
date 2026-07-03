@@ -13,7 +13,6 @@ WORKDIR /app
 # Copy workspace scaffolding + web package manifest for dependency resolution
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps/web/package.json ./apps/web/
-COPY packages/shared-types/package.json ./packages/shared-types/
 COPY packages/aui-mastra/package.json ./packages/aui-mastra/
 RUN pnpm install --frozen-lockfile --filter @repo/web...
 
@@ -22,7 +21,6 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/ ./
 COPY apps/web ./apps/web
-COPY packages/shared-types ./packages/shared-types
 COPY packages/aui-mastra ./packages/aui-mastra
 
 # Build-time environment variables

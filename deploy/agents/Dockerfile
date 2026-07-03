@@ -9,7 +9,6 @@ WORKDIR /app
 # Copy workspace scaffolding + agents package manifest
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps/agents/package.json ./apps/agents/
-COPY packages/shared-types/package.json ./packages/shared-types/
 
 RUN pnpm install --frozen-lockfile --filter @repo/agents...
 
@@ -19,7 +18,6 @@ WORKDIR /app
 
 COPY --from=deps /app/ ./
 COPY apps/agents ./apps/agents
-COPY packages/shared-types ./packages/shared-types
 
 # mastra build produces a self-contained .mastra/output directory
 RUN pnpm --filter @repo/agents build
