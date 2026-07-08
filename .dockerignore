@@ -23,7 +23,6 @@
 
 # Docs & config not needed in builds
 *.md
-!deploy/README.md
 LICENSE
 .husky
 .changeset

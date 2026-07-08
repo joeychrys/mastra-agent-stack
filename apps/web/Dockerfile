@@ -80,7 +80,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/
 
 # Copy entrypoint script for runtime placeholder replacement
 # Must be done before switching to nextjs user, and needs proper ownership
-COPY --chown=nextjs:nodejs deploy/web/entrypoint.sh /app/entrypoint.sh
+COPY --chown=nextjs:nodejs apps/web/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 USER nextjs

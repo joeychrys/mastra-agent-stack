@@ -4,7 +4,7 @@ This covers the **`betterauth`** database (user auth/sessions), the only databas
 managed by Drizzle. The `mastra` agent database is managed by Mastra itself, not
 here.
 
-The production web image (`deploy/web/Dockerfile`) ships **no** migration tooling —
+The production web image (`apps/web/Dockerfile`) ships **no** migration tooling —
 it is a pure Next.js runtime artifact. Migrations are applied from a trusted
 operator machine that reaches the production database over
 [Tailscale](https://tailscale.com), reusing the `drizzle-kit` toolchain already

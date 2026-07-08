@@ -77,7 +77,7 @@ Drizzle. Against `env=prod`, only `migrate`/`studio` are permitted (needs
 
 ### Production Database Migrations
 
-The production web image (`deploy/web/Dockerfile`) ships **no** migration tooling —
+The production web image (`apps/web/Dockerfile`) ships **no** migration tooling —
 it is a pure Next.js runtime artifact. Do not add `drizzle-kit`/`pnpm`/`npm`
 install steps back into it. Migrations are applied from a trusted operator machine
 that reaches the prod database over Tailscale, reusing the `drizzle-kit` already in
