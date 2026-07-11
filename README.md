@@ -178,11 +178,14 @@ reusing the `drizzle-kit` toolchain already in `apps/web`.
 (use the database host's Tailscale name or `100.x.y.z` IP):
 
 ```bash
-cp deploy/db/.env.production.example deploy/db/.env.production
-# edit deploy/db/.env.production → set DATABASE_URL
+cp apps/web/.env.prod-db.example apps/web/.env.prod-db
+# edit apps/web/.env.prod-db → set DATABASE_URL
 ```
 
-`deploy/db/.env.production` is gitignored (`**/.env.production`) — never commit it.
+`apps/web/.env.prod-db` is gitignored (`.env*` in `apps/web/.gitignore`) — never
+commit it. It is deliberately **not** named `.env.production`: Next.js auto-loads
+that filename during `next build`, which would point local production builds at
+the prod database.
 
 **Apply migrations / browse the database** (with Tailscale connected):
 
@@ -191,7 +194,10 @@ make auth-db action=migrate env=prod   # apply versioned migrations to prod
 make auth-db action=studio  env=prod   # open Drizzle Studio (https://local.drizzle.studio)
 ```
 
-These map to `pnpm --filter @repo/web db:migrate:prod` / `db:studio:prod`.
+These map to `pnpm --filter @repo/web db:migrate:prod` / `db:studio:prod`, which
+load `apps/web/.env.prod-db` and run `drizzle-kit` with `apps/web` as the working
+directory (where `drizzle.config.ts`, the schema, and the versioned SQL in
+`src/drizzle/` live).
 
 > **Guardrail:** against production only `migrate`/`studio` are permitted (the
 > `auth-db` target refuses `push`/`generate` when `env=prod`). `migrate` applies
@@ -199,8 +205,6 @@ These map to `pnpm --filter @repo/web db:migrate:prod` / `db:studio:prod`.
 > against production** — it diffs the schema directly and can drop or alter
 > columns without a migration file. Run migrations **before** deploying an image that
 > expects the new schema.
-
-See [`deploy/db/README.md`](deploy/db/README.md) for the full workflow.
 
 ### Linting and Formatting
 

@@ -73,25 +73,30 @@ The `auth-db` target manages the `betterauth` database schema (Drizzle, in
 `apps/web`) and **requires** both `action=migrate|generate|push|studio` and
 `env=local|prod` (no defaults). The `mastra` database is managed by Mastra, not
 Drizzle. Against `env=prod`, only `migrate`/`studio` are permitted (needs
-`deploy/db/.env.production`).
+`apps/web/.env.prod-db`).
 
 ### Production Database Migrations
 
-The production web image (`deploy/web/Dockerfile`) ships **no** migration tooling —
+The production web image (`apps/web/Dockerfile`) ships **no** migration tooling —
 it is a pure Next.js runtime artifact. Do not add `drizzle-kit`/`pnpm`/`npm`
 install steps back into it. Migrations are applied from a trusted operator machine
 that reaches the prod database over Tailscale, reusing the `drizzle-kit` already in
 `apps/web`:
 
 ```bash
-cp deploy/db/.env.production.example deploy/db/.env.production  # one-time; gitignored
+cp apps/web/.env.prod-db.example apps/web/.env.prod-db  # one-time; gitignored
 make auth-db action=migrate env=prod   # or: pnpm --filter @repo/web db:migrate:prod
 ```
+
+The prod env file is deliberately **not** named `.env.production` — Next.js
+auto-loads that filename during `next build`, which would point local production
+builds at the prod database.
 
 **Guardrail:** against prod use `db:migrate` only (versioned SQL from
 `apps/web/src/drizzle/`). **Never `db:push` against prod** — it diffs the schema
 directly and can drop/alter without a migration file. Migrate before deploying an
-image that expects the new schema. See `deploy/db/README.md` for the full workflow.
+image that expects the new schema. See "Production Database Migrations" in the
+root `README.md` for the full workflow.
 
 ### Pre-commit & Environment
 
@@ -198,6 +203,6 @@ When using `assistant-ui`'s `unstable_useRemoteThreadListRuntime` with Mastra Me
 9. Chat route has its own `QueryClient` singleton — hooks and thread adapter must share it
 10. After schema changes: `make auth-db action=generate env=local` then `make auth-db action=migrate env=local`
 11. After fresh clone or `make db-reset`: run `make auth-db action=migrate env=local`
-12. Prod migrations run from a Tailscale-connected operator machine via `make auth-db action=migrate env=prod` (reads gitignored `deploy/db/.env.production`) — never bundle migration tooling into the web image, and never `db:push` against prod
+12. Prod migrations run from a Tailscale-connected operator machine via `make auth-db action=migrate env=prod` (reads gitignored `apps/web/.env.prod-db`) — never bundle migration tooling into the web image, and never `db:push` against prod
 13. No shared-types package: contract data comes from the Mastra API at runtime; presentation types are owned by the rendering component. Always reference agents by their `id` (`"weather-agent"`), never the registration map key (`weatherAgent`) — backend lookups use `mastra.getAgentById()`
 14. All agents must be registered in the Mastra `agents` map (`src/mastra/index.ts`) and retrieved via `mastra.getAgent()` in workflow steps — local agents created with `new Agent()` inline bypass the observability pipeline and will not appear in the usage logger or any span output processors

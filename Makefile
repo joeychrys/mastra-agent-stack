@@ -57,7 +57,7 @@ db-logs: ## Tail PostgreSQL logs
 # Manage the betterauth database schema (Drizzle, lives in apps/web).
 #   action = migrate | generate | push | studio   (REQUIRED)
 #   env    = local | prod                          (REQUIRED; prod runs over
-#            Tailscale and needs deploy/db/.env.production)
+#            Tailscale and needs apps/web/.env.prod-db)
 # Examples:
 #   make auth-db action=migrate  env=local         # apply migrations locally
 #   make auth-db action=generate env=local         # generate migration files
