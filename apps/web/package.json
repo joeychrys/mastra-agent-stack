@@ -13,8 +13,8 @@
     "db:push": "dotenv -e .env -- drizzle-kit push",
     "db:generate": "dotenv -e .env -- drizzle-kit generate",
     "db:studio": "dotenv -e .env -- drizzle-kit studio",
-    "db:migrate:prod": "dotenv -e ../../deploy/db/.env.production -- drizzle-kit migrate",
-    "db:studio:prod": "dotenv -e ../../deploy/db/.env.production -- drizzle-kit studio"
+    "db:migrate:prod": "dotenv -e .env.prod-db -- drizzle-kit migrate",
+    "db:studio:prod": "dotenv -e .env.prod-db -- drizzle-kit studio"
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.221",
