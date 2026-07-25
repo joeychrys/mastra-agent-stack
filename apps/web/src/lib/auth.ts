@@ -72,7 +72,6 @@ export const auth = betterAuth({
   plugins: [
     openAPI(),
     admin(),
-    nextCookies(),
     jwt(),
     polar({
       client: getPolarClient(),
@@ -103,5 +102,6 @@ export const auth = betterAuth({
         }),
       ],
     }),
+    nextCookies(),
   ],
 });

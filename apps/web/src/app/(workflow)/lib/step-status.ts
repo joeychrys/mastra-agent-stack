@@ -1,5 +1,4 @@
 import {
-  Ban,
   CheckCircle2,
   Circle,
   CircleAlert,
@@ -10,8 +9,9 @@ import {
 import type { WorkflowStepStatus } from "./types";
 
 // ---------------------------------------------------------------------------
-// Shared status config — single source of truth for workflow step/run status
-// icon/color across workflow UIs (graph nodes, run history sidebar, ...).
+// Shared status config — single source of truth for step status icon/color in
+// the workflow graph. The run history sidebar deliberately does NOT use this:
+// it shows only an in-flight spinner and a failed dot.
 // ---------------------------------------------------------------------------
 
 type StatusConfig = {
@@ -30,20 +30,6 @@ export const statusConfig: Record<WorkflowStepStatus, StatusConfig> = {
   waiting: { icon: Circle, color: "text-muted-foreground/40", label: "Waiting" },
   skipped: { icon: CircleOff, color: "text-muted-foreground/40", label: "Skipped" },
 };
-
-/** Config for run-level statuses that don't exist at the step level. */
-const canceledConfig: StatusConfig = {
-  icon: Ban,
-  color: "text-muted-foreground",
-  label: "Canceled",
-};
-
-/** Map an overall run status (e.g. "pending", "canceled") onto a status config. */
-export function runStatusConfig(status: string) {
-  if (status === "canceled") return canceledConfig;
-  if (status in statusConfig) return statusConfig[status as WorkflowStepStatus];
-  return statusConfig.waiting;
-}
 
 /** Turn a kebab/snake resource id into a human-readable title. */
 export function formatStepName(name: string): string {

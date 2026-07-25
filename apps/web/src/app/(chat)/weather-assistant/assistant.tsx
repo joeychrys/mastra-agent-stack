@@ -3,6 +3,8 @@
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { useMastraThreadListRuntime } from "@repo/aui-mastra";
 import Link from "next/link";
+import { MobileNav } from "@/components/mobile-nav";
+import { ModeToggle } from "@/components/theme-toggle";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -62,6 +64,13 @@ export const Assistant = () => {
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
+              {/* This route group has no NavBar, so the theme toggle and site
+                  nav live here — the hamburger shows at all sizes since there
+                  is no desktop nav to fall back on. */}
+              <div className="ml-auto flex items-center gap-2">
+                <ModeToggle />
+                <MobileNav />
+              </div>
             </header>
             <div className="flex-1 overflow-hidden">
               <Thread />

@@ -1,9 +1,5 @@
 "use client";
 
-// ---------------------------------------------------------------------------
-// Types — matches the activitiesPlanSchema from the workflow
-// ---------------------------------------------------------------------------
-
 type ActivityItem = {
   name: string;
   description: string;
@@ -17,10 +13,6 @@ type ActivitiesPlan = {
   indoor: ActivityItem[];
   considerations: string[];
 };
-
-// ---------------------------------------------------------------------------
-// Activity item
-// ---------------------------------------------------------------------------
 
 function ActivityItemRow({ item }: { item: ActivityItem }) {
   return (
@@ -38,10 +30,6 @@ function ActivityItemRow({ item }: { item: ActivityItem }) {
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Activity section
-// ---------------------------------------------------------------------------
 
 function ActivitySection({
   items,
@@ -65,17 +53,13 @@ function ActivitySection({
   );
 }
 
-// ---------------------------------------------------------------------------
-// ActivityCard — renders the structured JSON from plan-activities
-// ---------------------------------------------------------------------------
-
-export function ActivityCard({ data }: { data: unknown }) {
-  const plan = data as ActivitiesPlan;
+export function ActivityCard({ output }: { output: unknown }) {
+  const plan = output as ActivitiesPlan;
 
   if (!plan?.morning && !plan?.afternoon && !plan?.indoor) {
     return (
       <pre className="mt-2 whitespace-pre-wrap rounded-2xl bg-muted px-4 py-3 text-xs">
-        {JSON.stringify(data, null, 2)}
+        {JSON.stringify(output, null, 2)}
       </pre>
     );
   }

@@ -4,10 +4,9 @@ import { Handle, type Node, type NodeProps, Position } from "@xyflow/react";
 import { ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { HANDLE_CLASS } from "../lib/graph-config";
 import { formatDuration, formatStepName, statusConfig } from "../lib/step-status";
 import type { WorkflowStepResult } from "../lib/types";
-
-export const HANDLE_CLASS = "!size-1.5 !border-border !bg-muted-foreground/40";
 
 export type StepNodeData = {
   step: WorkflowStepResult;
@@ -15,12 +14,14 @@ export type StepNodeData = {
   description?: string;
   /** Wall-clock duration of the step in ms (available for historical runs). */
   durationMs?: number;
+  /** Node width in px, resolved by the graph from the page's canvas config. */
+  width: number;
   /** Whether the node has output that can be expanded. */
   expandable: boolean;
   /** Current expanded state (only meaningful when `expandable`). */
   expanded: boolean;
   /**
-   * Custom rendering for the step's output (from the workflow UI registry).
+   * Custom rendering for the step's output, declared by the workflow page.
    * When unset, the output renders as raw JSON.
    */
   outputContent?: ReactNode;
@@ -35,7 +36,8 @@ export type StepNodeData = {
 export type StepNodeType = Node<StepNodeData, "step">;
 
 export function StepNode({ data }: NodeProps<StepNodeType>) {
-  const { step, description, durationMs, expandable, expanded, outputContent, onToggle } = data;
+  const { step, description, durationMs, width, expandable, expanded, outputContent, onToggle } =
+    data;
   const { suspendContent } = data;
   const cfg = statusConfig[step.status] ?? statusConfig.waiting;
   const Icon = cfg.icon;
@@ -75,7 +77,10 @@ export function StepNode({ data }: NodeProps<StepNodeType>) {
   ) : null;
 
   return (
-    <div className="pointer-events-auto w-[300px] rounded-2xl border bg-background shadow-sm">
+    <div
+      className="pointer-events-auto rounded-2xl border bg-background shadow-sm"
+      style={{ width }}
+    >
       <Handle type="target" position={Position.Top} className={HANDLE_CLASS} />
 
       {isSuspended ? (

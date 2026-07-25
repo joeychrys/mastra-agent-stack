@@ -41,8 +41,8 @@ export default async function NavBar() {
           ))}
         </nav>
 
-        {/* Right side actions */}
-        <div className="ml-auto flex items-center gap-4">
+        {/* Right side actions — gap-2 matches the agent/workflow headers. */}
+        <div className="ml-auto flex items-center gap-2">
           {session ? (
             <Suspense fallback={<div className="h-8 w-8 animate-pulse rounded-full bg-muted" />}>
               <AvatarDropdown session={JSON.parse(JSON.stringify(session))} />

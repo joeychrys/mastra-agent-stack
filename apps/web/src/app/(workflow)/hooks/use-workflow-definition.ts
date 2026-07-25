@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { HeadersConfig } from "./types";
+import type { HeadersConfig } from "../lib/types";
 
 // ---------------------------------------------------------------------------
 // useMastraWorkflowDefinition
