@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { HeadersConfig, WorkflowData, WorkflowStepResult, WorkflowStepStatus } from "./types";
+import type {
+  HeadersConfig,
+  WorkflowData,
+  WorkflowStepResult,
+  WorkflowStepStatus,
+} from "../lib/types";
 
 // ---------------------------------------------------------------------------
 // useMastraWorkflowRuns

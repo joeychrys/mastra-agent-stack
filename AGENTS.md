@@ -115,6 +115,20 @@ Biome is the sole linter/formatter for both projects. No ESLint or Prettier.
 There is deliberately **no** shared-types package. The Mastra API is the contract between the apps:
 
 - **Structure/config data** (workflows, steps, schemas, agent lists) is fetched at runtime from the Mastra REST API (`GET /api/workflows/:id`, `GET /api/agents`, ...). The workflow UI under `apps/web/src/app/(workflow)/` is the reference pattern.
+- **Workflow routes are explicit and self-contained.** Each `workflows/<workflow-id>/` folder owns a `config.ts` (static data — ids, copy, `stepWidths`, and a **required** `canvas`) and a `page.tsx` that spreads that config into `WorkflowRunner` and supplies `renderInput` / `renderStep`; colocate custom components in the same folder. Config files are `.ts`, never `.tsx`, so components can never leak into config — anything returning JSX belongs in `page.tsx`. Without `renderInput`, the input node is a disabled JSON placeholder so missing page UI is visible. Returning `undefined` from `renderStep` uses the raw-JSON fallback. Workflow hooks live under `(workflow)/hooks/`. The workflow listing is intentionally hardcoded, and there is no dynamic catch-all workflow route.
+- **Canvas sizing/spacing is declared per page, not globally.** `(workflow)/lib/graph-config.ts` exports the `CanvasConfig` type plus non-tunable internals (`INPUT_NODE_ID`, `CENTER_X`, `FALLBACK_NODE_HEIGHT`, `HANDLE_CLASS`) — deliberately **no default values**, so every page states its own canvas and TypeScript fails the build if one is missing. Node width is always an explicit number (never content-derived): the graph resolves `stepWidths[stepId] ?? canvas.nodeWidth` and passes it to the node shell. Copy this block when adding a workflow:
+
+```ts
+canvas: {
+  nodeWidth: 300,
+  nodeSpacingX: 40, // horizontal gap within a row
+  rowSpacingY: 50,  // vertical gap between rows
+  fitViewPadding: 0.3,
+  fitViewMaxZoom: 0.8,
+  minZoom: 0.2,
+  nodesDraggable: false,
+},
+```
 - **Presentation types** for tool/step outputs are owned by the component that renders them (e.g. `WeatherResult` in `weather-tool-ui.tsx`), with defensive runtime guards since results arrive as untyped JSON.
 - **Agent references always use the agent `id`** (e.g. `"weather-agent"`, as listed by `GET /api/agents`) — never the Mastra registration map key (e.g. `weatherAgent`). Backend lookups use `mastra.getAgentById("agent-id")`, not `mastra.getAgent(mapKey)`.
 

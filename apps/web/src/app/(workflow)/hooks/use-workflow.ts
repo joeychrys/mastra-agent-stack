@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useMemo } from "react";
-import type { MastraWorkflowConfig, WorkflowData } from "./types";
+import type { MastraWorkflowConfig, WorkflowData } from "../lib/types";
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -23,6 +23,13 @@ export type MastraWorkflowReturn = {
 
   /** Chat status — "ready", "streaming", "error", etc. */
   status: ReturnType<typeof useChat>["status"];
+
+  /**
+   * Abort the in-flight stream. Canceling a run server-side does NOT stop the
+   * browser from consuming events already in flight, so callers that cancel a
+   * live run should call this too.
+   */
+  stop: () => void;
 
   /**
    * Start the workflow.
@@ -86,7 +93,7 @@ export function useMastraWorkflow(config: MastraWorkflowConfig): MastraWorkflowR
 
   const workflowUrl = `${baseUrl}${workflowPath}/${workflowId}`;
 
-  const { messages, sendMessage, setMessages, status } = useChat({
+  const { messages, sendMessage, setMessages, status, stop } = useChat({
     transport: new DefaultChatTransport({
       api: workflowUrl,
       headers,
@@ -185,5 +192,5 @@ export function useMastraWorkflow(config: MastraWorkflowConfig): MastraWorkflowR
     });
   };
 
-  return { messages, status, sendInput, resume, workflowData, runId, suspendedStep };
+  return { messages, status, stop, sendInput, resume, workflowData, runId, suspendedStep };
 }

@@ -2,8 +2,8 @@
 
 import { ArrowUpIcon } from "lucide-react";
 import { useState } from "react";
+import type { WorkflowInputField } from "../hooks/use-workflow-definition";
 import { formatStepName } from "../lib/step-status";
-import type { WorkflowInputField } from "../lib/use-workflow-definition";
 
 // ---------------------------------------------------------------------------
 // SuspendForm — generic UI for a suspended workflow step.
