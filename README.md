@@ -88,16 +88,49 @@ apps/agents/src/mastra/
 
 ```
 apps/web/src/app/
-  (auth)/           # Sign-in, sign-up, reset-password (no nav)
-  (main)/           # Home, dashboard, account, admin, pricing, payment
-  (chat)/chat/      # Full-viewport AI chat interface
-    assistant.tsx   # AssistantRuntimeProvider + thread management
-    components/     # Chat UI components (thread, sidebar, markdown, tools)
-    lib/            # Mastra API client, thread adapter, query client
-    hooks/          # TanStack Query hooks for threads and messages
+  (auth)/               # Sign-in, sign-up, reset-password (no nav)
+  (main)/               # Home, dashboard, account, admin, pricing, payment
+  (chat)/               # Full-viewport agent chat interface
+    weather-assistant/  # One route per agent (assistant.tsx + tool UIs)
+    components/         # Chat UI components (thread, sidebar, markdown, tools)
+    lib/                # Mastra API client, thread adapter, query client
+  (workflow)/           # Full-viewport workflow runner (React Flow graph)
+    workflows/<id>/     # One folder per workflow (config.ts + page.tsx + components)
+    components/         # Runner, graph, node shells, run-history sidebar
+    hooks/              # Workflow definition, live run, and run-history hooks
+    lib/                # Canvas config, status helpers, shared types
 ```
 
-The app uses route groups for layout isolation — `(auth)` pages have no navigation bar, `(main)` pages have one, and `(chat)` takes over the full viewport.
+The app uses route groups for layout isolation — `(auth)` pages have no navigation bar, `(main)` pages have one, and `(chat)` / `(workflow)` take over the full viewport.
+
+### Workflow UI
+
+Every workflow has an explicit route; there is intentionally **no** dynamic
+`[workflowId]` page. A workflow folder looks like this:
+
+```
+(workflow)/workflows/weather-workflow/
+  config.ts           # static data: ids, copy, node widths, canvas
+  page.tsx            # composes <WorkflowRunner>, supplies renderInput / renderStep
+  city-input.tsx      # this workflow's input form
+  activity-card.tsx   # custom rendering for one step's output
+```
+
+- **Structure comes from Mastra at runtime** — the step graph, input schema, and
+  resume schemas are fetched from the API. Pages only supply presentation.
+- **`renderInput`** builds the graph's first node. Omit it and the input node
+  renders a disabled JSON placeholder, so an unfinished page looks unfinished.
+- **`renderStep(stepId, output)`** returns a component for a given step, or
+  `undefined` to fall back to the raw-JSON view.
+- **`canvas` is required** in every `config.ts` (node width, spacing, zoom
+  limits). `lib/graph-config.ts` exports the `CanvasConfig` type and layout
+  internals but deliberately **no default values**, so each page states its own
+  and the build fails if one is missing.
+- Config files are `.ts`, never `.tsx` — JSX can't leak into config, so anything
+  that renders lives in `page.tsx` or a colocated component.
+
+Adding a workflow means creating that folder and adding a card to
+`(main)/workflows/page.tsx` (the listing is hardcoded on purpose).
 
 ### Cross-App Contracts
 
@@ -228,6 +261,7 @@ make typecheck      # type-check all projects (cached via Turborepo)
 - [Next.js 16](https://nextjs.org) with Turbopack
 - React 19
 - [assistant-ui](https://github.com/Yonom/assistant-ui) — chat interface components
+- [React Flow](https://reactflow.dev) — workflow graph canvas
 - [Better Auth](https://www.better-auth.com) — authentication
 - [Drizzle ORM](https://orm.drizzle.team) — type-safe database access
 - [Polar.sh](https://polar.sh) — payments and subscriptions
