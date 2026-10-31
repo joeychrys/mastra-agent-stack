@@ -195,12 +195,16 @@ When using `assistant-ui`'s `unstable_useRemoteThreadListRuntime` with Mastra Me
 
 **Root cause:** `assistant-ui` generates temporary local IDs before server persistence. `AssistantChatTransport` relies on `this.runtime` (set via React effect after render). On first message send it's `undefined`, so `initialize()` resolves immediately and `prepareSendMessagesRequest` fires before `createThread()` completes, sending the raw `__LOCALID_*` to Mastra. Memory auto-creates a thread for unknown IDs, resulting in two threads per conversation.
 
+**Current composition:** the per-thread runtime is assistant-ui's `useChatRuntime` (from `@assistant-ui/ai-sdk`), nested inside the package's `useRemoteThreadListRuntime` (it becomes a no-op list via `allowNesting`). `useChatRuntime` wires the transport to the runtime and the current thread list item, so the transport itself awaits `threadListItem.initialize()` before `prepareSendMessagesRequest`. The guards below are **retained as defense in depth** — removing them requires replacing this invariant deliberately, with race tests (slow/concurrent/failed initialization, switching threads mid-creation).
+
 **How the fix works (do not remove or simplify):**
 
 1. Pending init promises are stored in a `pendingInits` Map (a `useRef` in the hook), keyed by local ID.
-2. `prepareSendMessagesRequest` awaits `resolveThreadIdAsync()` — guaranteeing the server UUID is available before the request fires.
-3. `id: options.id` is deliberately omitted from the request body — it's always the `__LOCALID_*` placeholder.
+2. `prepareSendMessagesRequest` awaits `resolveThreadIdAsync()` — guaranteeing the server UUID is available before the request fires (it starts `threadListItem.initialize()` itself if nothing is in flight, and refuses to send a local ID).
+3. `id: options.id` is deliberately omitted from the request body — for new threads it originates as the `__LOCALID_*` placeholder; Mastra receives the thread only via `memory.thread`.
 4. `initialize()` is guarded against repeated calls via both `threadIdMap` (completed) and `pendingInits` (in-flight).
+
+History loading reads the thread list item's `remoteId` lazily at load time (`createHistoryAdapter({ threadId: () => ... })`), so a new thread's `__LOCALID_*` placeholder never reaches the memory API.
 
 **If `__LOCALID_*` threads appear in the database**, check those four properties still hold in `useMastraThreadListRuntime.ts`.
 
@@ -214,7 +218,7 @@ When using `assistant-ui`'s `unstable_useRemoteThreadListRuntime` with Mastra Me
 6. `"use client"` only when a component uses hooks or browser APIs
 7. Run `make typecheck` to verify types before committing (uses turbo caching)
 8. Chat route: relative imports internally, `@/` aliases only for shared UI
-9. Chat route has its own `QueryClient` singleton — hooks and thread adapter must share it
+9. The Mastra auth-token cache uses the `queryClient` singleton in `(chat)/lib/query-client.ts` — `getAuthToken()` and `useAuthToken()` both bind to it explicitly (no route-level `QueryClientProvider`), so they always share one cache. Register tool-call renderers as toolkits via `AuiConfig({ tools: Tools({ toolkit }) })` on `AssistantRuntimeProvider`'s `config`, not with the deprecated `makeAssistantToolUI` components
 10. After schema changes: `make auth-db action=generate env=local` then `make auth-db action=migrate env=local`
 11. After fresh clone or `make db-reset`: run `make auth-db action=migrate env=local`
 12. Prod migrations run from a Tailscale-connected operator machine via `make auth-db action=migrate env=prod` (reads gitignored `apps/web/.env.prod-db`) — never bundle migration tooling into the web image, and never `db:push` against prod

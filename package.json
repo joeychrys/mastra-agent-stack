@@ -26,22 +26,14 @@
   "pnpm": {
     "overrides": {
       "kysely": "0.28.17",
-      "vite@<7.3.5": "^7.3.5",
-      "shell-quote@<1.8.4": ">=1.8.4",
-      "esbuild@<0.25.0": ">=0.25.0",
-      "esbuild@>=0.27.3 <0.28.1": ">=0.28.1",
-      "postcss@<8.5.10": ">=8.5.10"
+      "@esbuild-kit/core-utils>esbuild": "^0.25.12",
+      "tsup>esbuild": "^0.28.2",
+      "@hono/node-ws>@hono/node-server": "^2.1.5",
+      "minimatch@>=10.0.0 <11.0.1": "^11.0.3"
     },
     "peerDependencyRules": {
       "allowedVersions": {
         "next": "16"
-      }
-    },
-    "packageExtensions": {
-      "@assistant-ui/react-ai-sdk": {
-        "dependencies": {
-          "assistant-stream": ">=0.3.0"
-        }
       }
     },
     "onlyBuiltDependencies": [

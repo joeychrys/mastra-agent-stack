@@ -3,7 +3,8 @@
  *
  * Loads previous messages when switching threads so the UI shows the full
  * conversation history.  Fetches raw Mastra messages and converts them to
- * the AI SDK v5 message format that assistant-ui expects.
+ * the AI SDK v7 `UIMessage` format that assistant-ui (`@assistant-ui/ai-sdk`)
+ * expects.
  *
  * @example
  * ```tsx
@@ -25,7 +26,7 @@
  */
 
 import type { ThreadHistoryAdapter } from "@assistant-ui/react";
-import { toAISdkV5Messages } from "@mastra/ai-sdk/ui";
+import { toAISdkMessages } from "@mastra/ai-sdk/ui";
 import { fetchRawMessages } from "./internal/fetch";
 import type { HeadersConfig } from "./types";
 
@@ -35,8 +36,13 @@ import type { HeadersConfig } from "./types";
 
 /** Configuration for `createHistoryAdapter`. */
 export type HistoryAdapterConfig = {
-  /** Thread ID to load history for (`null` returns an empty history). */
-  threadId: string | null;
+  /**
+   * Server-side thread ID to load history for (`null`/`undefined` returns an
+   * empty history). Pass a function to resolve it lazily at load time — e.g.
+   * from the thread list item's `remoteId`, which only exists once the thread
+   * has been created on the server.
+   */
+  threadId: string | null | (() => string | null | undefined);
   /** Base URL of the Mastra server. */
   baseUrl: string;
   /** Agent ID — required by the Mastra memory API. */
@@ -52,13 +58,15 @@ export type HistoryAdapterConfig = {
 /**
  * Creates a `ThreadHistoryAdapter` that loads messages for a given thread
  * from the Mastra memory API, converting them from Mastra's internal DB
- * format to AI SDK v5 `UIMessage` format via `toAISdkV5Messages`.
+ * format to AI SDK v7 `UIMessage` format via `toAISdkMessages(..., { version: "v7" })`.
  *
  * Pass the returned adapter to `useMastraChat` via
  * `runtimeOptions.adapters.history`.
  */
 export function createHistoryAdapter(config: HistoryAdapterConfig): ThreadHistoryAdapter {
-  const { threadId, baseUrl, agentId, headers } = config;
+  const { baseUrl, agentId, headers } = config;
+  const resolveThreadId = () =>
+    typeof config.threadId === "function" ? config.threadId() : config.threadId;
 
   return {
     async load() {
@@ -74,6 +82,7 @@ export function createHistoryAdapter(config: HistoryAdapterConfig): ThreadHistor
         async load() {
           type HistoryMessage = { parentId: string | null; message: TMessage };
 
+          const threadId = resolveThreadId();
           if (!threadId) {
             return { messages: [] as HistoryMessage[] };
           }
@@ -84,7 +93,9 @@ export function createHistoryAdapter(config: HistoryAdapterConfig): ThreadHistor
               return { messages: [] as HistoryMessage[] };
             }
 
-            const uiMessages = toAISdkV5Messages(raw as Parameters<typeof toAISdkV5Messages>[0]);
+            const uiMessages = toAISdkMessages(raw as Parameters<typeof toAISdkMessages>[0], {
+              version: "v7",
+            });
 
             let parentId: string | null = null;
             return {

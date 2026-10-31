@@ -1,6 +1,6 @@
 "use client";
 
-import { AssistantRuntimeProvider } from "@assistant-ui/react";
+import { AssistantRuntimeProvider, AuiConfig, Tools } from "@assistant-ui/react";
 import { useMastraThreadListRuntime } from "@repo/aui-mastra";
 import Link from "next/link";
 import { MobileNav } from "@/components/mobile-nav";
@@ -17,13 +17,15 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 import { getAuthToken } from "@/hooks/use-auth-token";
 import { Thread } from "../components/assistant-ui/thread";
 import { ThreadListSidebar } from "../components/assistant-ui/threadlist-sidebar";
-import { WeatherToolUI } from "./components/tools/weather-tool-ui";
+import { weatherToolkit } from "./components/tools/weather-tool-ui";
 
 const MASTRA_BASE_URL = process.env.NEXT_PUBLIC_MASTRA_URL ?? "http://localhost:4111";
 // Always the agent's `id` (as listed by GET /api/agents) — never the Mastra
 // registration map key (e.g. "weatherAgent"), which also resolves but drifts.
 const AGENT_ID = "weather-agent";
 const RESOURCE_ID = "authenticated-user";
+// Tool-call renderers, registered declaratively alongside the runtime.
+const AUI_CONFIG = AuiConfig({ tools: Tools({ toolkit: weatherToolkit }) });
 
 export const Assistant = () => {
   const runtime = useMastraThreadListRuntime({
@@ -45,8 +47,7 @@ export const Assistant = () => {
   });
 
   return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      <WeatherToolUI />
+    <AssistantRuntimeProvider runtime={runtime} config={AUI_CONFIG}>
       <SidebarProvider>
         <div className="flex h-dvh w-full pr-0.5">
           <ThreadListSidebar />

@@ -1,6 +1,6 @@
 "use client";
 
-import { makeAssistantToolUI } from "@assistant-ui/react";
+import type { ToolCallMessagePartComponent, Toolkit } from "@assistant-ui/react";
 import {
   CloudIcon,
   CloudRainIcon,
@@ -113,11 +113,21 @@ function Stat({
   );
 }
 
-export const WeatherToolUI = makeAssistantToolUI<{ location: string }, WeatherResult>({
-  toolName: "weatherTool",
-  render: ({ result, status }) => {
-    if (status.type === "running") return <WeatherCardLoading />;
-    if (!result || !result.location) return null;
-    return <WeatherCard data={result} />;
-  },
-});
+const WeatherToolRender: ToolCallMessagePartComponent<{ location: string }, WeatherResult> = ({
+  result,
+  status,
+}) => {
+  if (status.type === "running") return <WeatherCardLoading />;
+  if (!result?.location) return null;
+  return <WeatherCard data={result} />;
+};
+
+/**
+ * Render-only toolkit for the weather assistant. `weatherTool` is defined and
+ * executed by the Mastra agent (`type: "backend"`); this entry only attaches
+ * UI to its tool-call parts — no schema is uploaded and nothing runs in the
+ * browser. Register it once via `AuiConfig({ tools: Tools({ toolkit }) })`.
+ */
+export const weatherToolkit = {
+  weatherTool: { type: "backend", render: WeatherToolRender },
+} satisfies Toolkit;

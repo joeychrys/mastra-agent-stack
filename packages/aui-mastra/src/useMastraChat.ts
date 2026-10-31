@@ -1,8 +1,8 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { AssistantChatTransport, useAISDKRuntime } from "@assistant-ui/ai-sdk";
 import type { AssistantRuntime } from "@assistant-ui/react";
-import { AssistantChatTransport, useAISDKRuntime } from "@assistant-ui/react-ai-sdk";
 import { useMemo, useRef } from "react";
 import { resolveHeaders } from "./internal/fetch";
 import type { MastraChatConfig } from "./types";
@@ -72,6 +72,7 @@ export function useMastraChat(
             body: {
               ...options.body,
               messages: options.messages,
+              trigger: options.trigger,
               memory: {
                 thread: threadId,
                 resource: resourceId,

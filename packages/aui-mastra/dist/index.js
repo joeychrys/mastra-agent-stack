@@ -1,18 +1,13 @@
 "use client";
 
 // src/createHistoryAdapter.ts
-import { toAISdkV5Messages } from "@mastra/ai-sdk/ui";
+import { toAISdkMessages } from "@mastra/ai-sdk/ui";
 
 // src/internal/fetch.ts
 var resolveHeaders = async (headers) => {
   if (!headers) return {};
   if (typeof headers === "function") return await headers();
   return headers;
-};
-var normaliseHeaders = (headers) => {
-  if (!headers) return void 0;
-  if (typeof headers === "function") return headers;
-  return () => headers;
 };
 async function mastraFetch(url, headers, init) {
   const resolved = await resolveHeaders(headers);
@@ -45,7 +40,8 @@ async function fetchRawMessages(baseUrl, agentId, threadId, headers) {
 
 // src/createHistoryAdapter.ts
 function createHistoryAdapter(config) {
-  const { threadId, baseUrl, agentId, headers } = config;
+  const { baseUrl, agentId, headers } = config;
+  const resolveThreadId = () => typeof config.threadId === "function" ? config.threadId() : config.threadId;
   return {
     async load() {
       return { messages: [] };
@@ -55,6 +51,7 @@ function createHistoryAdapter(config) {
     withFormat() {
       return {
         async load() {
+          const threadId = resolveThreadId();
           if (!threadId) {
             return { messages: [] };
           }
@@ -63,7 +60,9 @@ function createHistoryAdapter(config) {
             if (!raw?.length) {
               return { messages: [] };
             }
-            const uiMessages = toAISdkV5Messages(raw);
+            const uiMessages = toAISdkMessages(raw, {
+              version: "v7"
+            });
             let parentId = null;
             return {
               messages: uiMessages.map((msg) => {
@@ -85,7 +84,7 @@ function createHistoryAdapter(config) {
 
 // src/useMastraChat.ts
 import { useChat } from "@ai-sdk/react";
-import { AssistantChatTransport, useAISDKRuntime } from "@assistant-ui/react-ai-sdk";
+import { AssistantChatTransport, useAISDKRuntime } from "@assistant-ui/ai-sdk";
 import { useMemo, useRef } from "react";
 function useMastraChat(config) {
   const { baseUrl, agentId, chatPath = "/chat", headers, memory, chatId, runtimeOptions } = config;
@@ -105,6 +104,7 @@ function useMastraChat(config) {
           body: {
             ...options.body,
             messages: options.messages,
+            trigger: options.trigger,
             memory: {
               thread: threadId,
               resource: resourceId
@@ -268,18 +268,23 @@ function useMastraMemory(config) {
 }
 
 // src/useMastraThreadListRuntime.ts
-import { useChat as useChat2 } from "@ai-sdk/react";
-import { useAuiState, useRemoteThreadListRuntime } from "@assistant-ui/react";
-import { AssistantChatTransport as AssistantChatTransport2, useAISDKRuntime as useAISDKRuntime2 } from "@assistant-ui/react-ai-sdk";
+import { AssistantChatTransport as AssistantChatTransport2, useChatRuntime } from "@assistant-ui/ai-sdk";
+import { useAui, useAuiState, useRemoteThreadListRuntime } from "@assistant-ui/react";
 import { createAssistantStream } from "assistant-stream";
 import { useMemo as useMemo2, useRef as useRef2 } from "react";
-function resolveThreadId(threadId, map) {
-  return map.get(threadId) ?? threadId;
-}
-async function resolveThreadIdAsync(threadId, map, pending) {
-  const p = pending.get(threadId);
-  if (p) return p;
-  return map.get(threadId) ?? threadId;
+var LOCAL_THREAD_ID_PREFIX = "__LOCALID_";
+async function resolveThreadIdAsync(threadId, map, pending, initializeItem) {
+  const known = map.get(threadId);
+  if (known) return known;
+  const inflight = pending.get(threadId);
+  if (inflight) return inflight;
+  if (!threadId.startsWith(LOCAL_THREAD_ID_PREFIX)) return threadId;
+  const initialized = await initializeItem?.();
+  const remoteId = initialized?.remoteId ?? map.get(threadId);
+  if (!remoteId || remoteId.startsWith(LOCAL_THREAD_ID_PREFIX)) {
+    throw new Error(`Thread ${threadId} has no server-side ID; refusing to send a local thread ID`);
+  }
+  return remoteId;
 }
 async function apiListThreads(baseUrl, agentId, resourceId, headers) {
   const result = await mastraFetch(
@@ -409,7 +414,7 @@ function createThreadListAdapter(configRef, threadIdMap, pendingInits) {
         title = text.slice(0, 60).trim();
       }
       title = title || "New Chat";
-      apiRenameThread(baseUrl, agentId, threadId, title, headers).catch(() => {
+      await apiRenameThread(baseUrl, agentId, threadId, title, headers).catch(() => {
       });
       return createAssistantStream((controller) => {
         controller.appendText(title);
@@ -423,20 +428,33 @@ function createThreadRuntimeHook(configRef, threadIdMap, pendingInits) {
     const cfg = configRef.current;
     const threadId = useAuiState((s) => s.threadListItem.id);
     const chatUrl = `${cfg.baseUrl}${cfg.chatPath ?? "/chat"}/${cfg.agentId}`;
+    const aui = useAui();
+    const auiRef = useRef2(aui);
+    auiRef.current = aui;
     const transport = useMemo2(
       () => new AssistantChatTransport2({
         api: chatUrl,
-        headers: normaliseHeaders(cfg.headers),
+        // Resolved per request, so the latest auth token is always used.
+        headers: () => resolveHeaders(configRef.current.headers),
         prepareSendMessagesRequest: async (options) => {
-          const resolved = await resolveThreadIdAsync(threadId, threadIdMap, pendingInits);
+          const resolved = await resolveThreadIdAsync(
+            threadId,
+            threadIdMap,
+            pendingInits,
+            async () => {
+              const item = auiRef.current.threadListItem;
+              return item.source ? item.initialize() : void 0;
+            }
+          );
           return {
             ...options,
             body: {
               ...options.body,
               messages: options.messages,
+              trigger: options.trigger,
               memory: {
                 thread: resolved,
-                resource: cfg.resourceId
+                resource: configRef.current.resourceId
               }
             }
           };
@@ -444,18 +462,20 @@ function createThreadRuntimeHook(configRef, threadIdMap, pendingInits) {
       }),
       [threadId, chatUrl]
     );
-    const chat = useChat2({ id: threadId, transport });
-    const resolvedId = resolveThreadId(threadId, threadIdMap);
+    const { baseUrl, agentId } = cfg;
     const historyAdapter = useMemo2(
       () => createHistoryAdapter({
-        threadId: resolvedId,
-        baseUrl: cfg.baseUrl,
-        agentId: cfg.agentId,
-        headers: cfg.headers
+        threadId: () => {
+          const item = auiRef.current.threadListItem;
+          return item.source ? item.getState().remoteId : null;
+        },
+        baseUrl,
+        agentId,
+        headers: () => resolveHeaders(configRef.current.headers)
       }),
-      [resolvedId]
+      [baseUrl, agentId]
     );
-    return useAISDKRuntime2(chat, { adapters: { history: historyAdapter } });
+    return useChatRuntime({ transport, adapters: { history: historyAdapter } });
   };
 }
 function useMastraThreadListRuntime(config) {

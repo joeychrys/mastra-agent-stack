@@ -11,6 +11,13 @@
  * - Per-thread chat runtime with history loading
  * - The `__LOCALID_*` race condition (same fix as `/chat` v1)
  *
+ * The per-thread chat runtime is assistant-ui's `useChatRuntime`. Nested
+ * inside this thread list it does not create a second list (`allowNesting`);
+ * it only runs the per-thread AI SDK chat and wires `AssistantChatTransport`
+ * to the runtime and the current thread list item. This package supplies only
+ * the Mastra-specific pieces: the thread adapter, the request body (`memory`),
+ * auth headers and history conversion.
+ *
  * Returns an `AssistantRuntime` that powers both `<Thread />` and
  * `<ThreadListPrimitive.*>` components from assistant-ui.
  *
@@ -35,14 +42,13 @@
  * ```
  */
 
-import { useChat } from "@ai-sdk/react";
+import { AssistantChatTransport, useChatRuntime } from "@assistant-ui/ai-sdk";
 import type { RemoteThreadListAdapter } from "@assistant-ui/react";
-import { useAuiState, useRemoteThreadListRuntime } from "@assistant-ui/react";
-import { AssistantChatTransport, useAISDKRuntime } from "@assistant-ui/react-ai-sdk";
+import { useAui, useAuiState, useRemoteThreadListRuntime } from "@assistant-ui/react";
 import { createAssistantStream } from "assistant-stream";
 import { useMemo, useRef } from "react";
 import { createHistoryAdapter } from "./createHistoryAdapter";
-import { mastraFetch, normaliseHeaders, resolveHeaders } from "./internal/fetch";
+import { mastraFetch, resolveHeaders } from "./internal/fetch";
 import type { HeadersConfig, MastraThread } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -95,22 +101,42 @@ export type MastraThreadListConfig = {
 // Thread ID resolution  (same fix as /chat v1 — see AGENTS.md)
 // ---------------------------------------------------------------------------
 // assistant-ui assigns temporary `__LOCALID_xxx` IDs to new threads.
-// `initialize()` creates the real server-side thread, but
-// `prepareSendMessagesRequest` can fire BEFORE `initialize()` completes.
-// We store pending promises so the request callback can await them.
+// `initialize()` creates the real server-side thread. With `useChatRuntime`,
+// `AssistantChatTransport` already awaits the thread list item's
+// `initialize()` before calling `prepareSendMessagesRequest`; the guards below
+// are retained as defense in depth (see AGENTS.md "Known Issues"). We store
+// pending promises so the request callback can await them, and — if no
+// initialization is in flight yet — start it ourselves through the thread list
+// item's public `initialize()`, which assistant-ui deduplicates (one
+// `initializeTask` per item) and which our adapter guards as well.
 
-function resolveThreadId(threadId: string, map: Map<string, string>): string {
-  return map.get(threadId) ?? threadId;
-}
+const LOCAL_THREAD_ID_PREFIX = "__LOCALID_";
+
+/** Starts (or joins) server-side initialization of the current thread list item. */
+type InitializeThreadListItem = () => Promise<{ remoteId: string } | undefined>;
 
 async function resolveThreadIdAsync(
   threadId: string,
   map: Map<string, string>,
   pending: Map<string, Promise<string>>,
+  initializeItem?: InitializeThreadListItem,
 ): Promise<string> {
-  const p = pending.get(threadId);
-  if (p) return p;
-  return map.get(threadId) ?? threadId;
+  const known = map.get(threadId);
+  if (known) return known;
+
+  const inflight = pending.get(threadId);
+  if (inflight) return inflight;
+
+  if (!threadId.startsWith(LOCAL_THREAD_ID_PREFIX)) return threadId;
+
+  // Local thread whose initialization has not started yet: start it now and
+  // wait for the server ID, so the request never carries a `__LOCALID_*`.
+  const initialized = await initializeItem?.();
+  const remoteId = initialized?.remoteId ?? map.get(threadId);
+  if (!remoteId || remoteId.startsWith(LOCAL_THREAD_ID_PREFIX)) {
+    throw new Error(`Thread ${threadId} has no server-side ID; refusing to send a local thread ID`);
+  }
+  return remoteId;
 }
 
 // ---------------------------------------------------------------------------
@@ -321,8 +347,11 @@ function createThreadListAdapter(
 
       title = title || "New Chat";
 
-      // Persist the title (fire-and-forget)
-      apiRenameThread(baseUrl, agentId, threadId, title, headers).catch(() => {});
+      // Persist the title before returning the stream: assistant-ui orders
+      // concurrent title generations by stream completion, so a write that
+      // outlives its stream could overwrite a newer (e.g. manual) title.
+      // A failed write is still non-fatal, as before.
+      await apiRenameThread(baseUrl, agentId, threadId, title, headers).catch(() => {});
 
       return createAssistantStream((controller) => {
         controller.appendText(title);
@@ -348,21 +377,42 @@ function createThreadRuntimeHook(
     const threadId = useAuiState((s) => s.threadListItem.id);
     const chatUrl = `${cfg.baseUrl}${cfg.chatPath ?? "/chat"}/${cfg.agentId}`;
 
+    // Public store API for this thread's list item (same lookup the
+    // assistant-ui `useChatRuntime` uses). Read through a ref so the transport
+    // below doesn't need to be recreated when the client identity changes.
+    const aui = useAui();
+    const auiRef = useRef(aui);
+    auiRef.current = aui;
+
     const transport = useMemo(
       () =>
         new AssistantChatTransport({
           api: chatUrl,
-          headers: normaliseHeaders(cfg.headers),
+          // Resolved per request, so the latest auth token is always used.
+          headers: () => resolveHeaders(configRef.current.headers),
           prepareSendMessagesRequest: async (options) => {
-            const resolved = await resolveThreadIdAsync(threadId, threadIdMap, pendingInits);
+            const resolved = await resolveThreadIdAsync(
+              threadId,
+              threadIdMap,
+              pendingInits,
+              async () => {
+                const item = auiRef.current.threadListItem;
+                return item.source ? item.initialize() : undefined;
+              },
+            );
+            // NOTE: `id: options.id` is deliberately omitted — it is the
+            // `__LOCALID_*` placeholder for new threads (see AGENTS.md).
+            // Mastra's chatRoute consumes `messages` and `trigger` and spreads
+            // every other body field into `agent.stream()` options.
             return {
               ...options,
               body: {
                 ...options.body,
                 messages: options.messages,
+                trigger: options.trigger,
                 memory: {
                   thread: resolved,
-                  resource: cfg.resourceId,
+                  resource: configRef.current.resourceId,
                 },
               },
             };
@@ -371,21 +421,25 @@ function createThreadRuntimeHook(
       [threadId, chatUrl],
     );
 
-    const chat = useChat({ id: threadId, transport });
-
-    const resolvedId = resolveThreadId(threadId, threadIdMap);
+    // Stable per thread: the server thread ID is read from the thread list
+    // item's `remoteId` at load time. A brand-new thread has no `remoteId`
+    // yet, so its `__LOCALID_*` placeholder never reaches the memory API.
+    const { baseUrl, agentId } = cfg;
     const historyAdapter = useMemo(
       () =>
         createHistoryAdapter({
-          threadId: resolvedId,
-          baseUrl: cfg.baseUrl,
-          agentId: cfg.agentId,
-          headers: cfg.headers,
+          threadId: () => {
+            const item = auiRef.current.threadListItem;
+            return item.source ? item.getState().remoteId : null;
+          },
+          baseUrl,
+          agentId,
+          headers: () => resolveHeaders(configRef.current.headers),
         }),
-      [resolvedId],
+      [baseUrl, agentId],
     );
 
-    return useAISDKRuntime(chat, { adapters: { history: historyAdapter } });
+    return useChatRuntime({ transport, adapters: { history: historyAdapter } });
   };
 }
 

@@ -1,6 +1,6 @@
 import * as _assistant_ui_react from '@assistant-ui/react';
 import { ThreadHistoryAdapter, AssistantRuntime } from '@assistant-ui/react';
-import { useAISDKRuntime } from '@assistant-ui/react-ai-sdk';
+import { useAISDKRuntime } from '@assistant-ui/ai-sdk';
 import * as _tanstack_react_query from '@tanstack/react-query';
 import * as react from 'react';
 
@@ -72,7 +72,8 @@ type MastraMemoryMessage = {
  *
  * Loads previous messages when switching threads so the UI shows the full
  * conversation history.  Fetches raw Mastra messages and converts them to
- * the AI SDK v5 message format that assistant-ui expects.
+ * the AI SDK v7 `UIMessage` format that assistant-ui (`@assistant-ui/ai-sdk`)
+ * expects.
  *
  * @example
  * ```tsx
@@ -95,8 +96,13 @@ type MastraMemoryMessage = {
 
 /** Configuration for `createHistoryAdapter`. */
 type HistoryAdapterConfig = {
-    /** Thread ID to load history for (`null` returns an empty history). */
-    threadId: string | null;
+    /**
+     * Server-side thread ID to load history for (`null`/`undefined` returns an
+     * empty history). Pass a function to resolve it lazily at load time — e.g.
+     * from the thread list item's `remoteId`, which only exists once the thread
+     * has been created on the server.
+     */
+    threadId: string | null | (() => string | null | undefined);
     /** Base URL of the Mastra server. */
     baseUrl: string;
     /** Agent ID — required by the Mastra memory API. */
@@ -107,7 +113,7 @@ type HistoryAdapterConfig = {
 /**
  * Creates a `ThreadHistoryAdapter` that loads messages for a given thread
  * from the Mastra memory API, converting them from Mastra's internal DB
- * format to AI SDK v5 `UIMessage` format via `toAISdkV5Messages`.
+ * format to AI SDK v7 `UIMessage` format via `toAISdkMessages(..., { version: "v7" })`.
  *
  * Pass the returned adapter to `useMastraChat` via
  * `runtimeOptions.adapters.history`.
@@ -204,9 +210,9 @@ declare const memoryKeys: {
 declare function useMastraMemory(config: MastraMemoryConfig): {
     currentThreadId: string | null;
     setCurrentThreadId: react.Dispatch<react.SetStateAction<string | null>>;
-    threads: _tanstack_react_query.UseQueryResult<NoInfer<MastraThread[]>, Error>;
-    thread: _tanstack_react_query.UseQueryResult<NoInfer<MastraThread>, Error>;
-    messages: _tanstack_react_query.UseQueryResult<NoInfer<MastraMemoryMessage[]>, Error>;
+    threads: _tanstack_react_query.UseQueryResult<MastraThread[], Error>;
+    thread: _tanstack_react_query.UseQueryResult<MastraThread, Error>;
+    messages: _tanstack_react_query.UseQueryResult<MastraMemoryMessage[], Error>;
     createThread: _tanstack_react_query.UseMutationResult<MastraThread, Error, {
         metadata?: Record<string, unknown>;
     } | undefined, unknown>;

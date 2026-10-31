@@ -49,11 +49,14 @@ export const mastra = new Mastra({
       },
     ],
     apiRoutes: [
+      // Stream versions must match the web app's AI SDK major (`ai@7`).
       chatRoute({
         path: "/chat/:agentId",
+        version: "v7",
       }),
       workflowRoute({
         path: "/workflow/:workflowId",
+        version: "v7",
         includeTextStreamParts: false,
       }),
     ],

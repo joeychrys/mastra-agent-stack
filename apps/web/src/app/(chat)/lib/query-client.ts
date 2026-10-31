@@ -1,5 +1,10 @@
 import { QueryClient } from "@tanstack/react-query";
 
+/**
+ * Shared client for the Mastra auth-token cache. `getAuthToken()` and
+ * `useAuthToken()` (`@/hooks/use-auth-token`) both bind to this instance
+ * explicitly, so no route-level `QueryClientProvider` is required.
+ */
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

@@ -31,16 +31,23 @@ async function fetchToken(): Promise<string> {
  *
  * The token is refreshed automatically before it expires.
  * Better Auth JWTs default to 15 minutes, so we refetch at ~12 minutes.
+ *
+ * Bound explicitly to the shared `queryClient` singleton (not the nearest
+ * `QueryClientProvider`), so this hook and `getAuthToken()` always share one
+ * token cache regardless of where the component renders.
  */
 export function useAuthToken() {
-  return useQuery({
-    queryKey: authTokenKeys.token,
-    queryFn: fetchToken,
-    staleTime: 12 * 60 * 1000, // 12 min — refresh before 15 min expiry
-    refetchInterval: 12 * 60 * 1000,
-    refetchOnWindowFocus: true,
-    retry: 2,
-  });
+  return useQuery(
+    {
+      queryKey: authTokenKeys.token,
+      queryFn: fetchToken,
+      staleTime: 12 * 60 * 1000, // 12 min — refresh before 15 min expiry
+      refetchInterval: 12 * 60 * 1000,
+      refetchOnWindowFocus: true,
+      retry: 2,
+    },
+    queryClient,
+  );
 }
 
 // ---------------------------------------------------------------------------

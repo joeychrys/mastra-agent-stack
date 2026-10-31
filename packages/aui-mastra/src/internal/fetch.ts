@@ -17,15 +17,6 @@ export const resolveHeaders = async (headers?: HeadersConfig): Promise<Record<st
   return headers;
 };
 
-/** Normalise `HeadersConfig` into the thunk shape `AssistantChatTransport` expects. */
-export const normaliseHeaders = (
-  headers?: HeadersConfig,
-): (() => Record<string, string> | Promise<Record<string, string>>) | undefined => {
-  if (!headers) return undefined;
-  if (typeof headers === "function") return headers;
-  return () => headers;
-};
-
 // ---------------------------------------------------------------------------
 // Typed fetch wrapper
 // ---------------------------------------------------------------------------
@@ -66,7 +57,7 @@ export async function mastraFetch<T>(
 /**
  * Fetch raw messages from the Mastra memory API.
  *
- * Returns untyped message objects suitable for `toAISdkV5Messages`.
+ * Returns untyped message objects suitable for `toAISdkMessages`.
  * Handles both `uiMessages` and `messages` response shapes — the API schema
  * declares both, but currently only `messages` is populated by `recall()`.
  *

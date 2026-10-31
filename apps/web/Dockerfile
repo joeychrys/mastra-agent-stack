@@ -1,5 +1,5 @@
 # Base image
-FROM docker.io/node:22.14-bookworm-slim AS base
+FROM docker.io/node:22.23.3-bookworm-slim AS base
 
 # Install pnpm
 RUN corepack enable pnpm

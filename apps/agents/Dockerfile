@@ -1,5 +1,5 @@
 # ── Base ──────────────────────────────────────────────────────────────
-FROM docker.io/node:22.14-bookworm-slim AS base
+FROM docker.io/node:22.23.3-bookworm-slim AS base
 RUN corepack enable pnpm
 
 # ── Dependencies ─────────────────────────────────────────────────────
@@ -23,7 +23,7 @@ COPY apps/agents ./apps/agents
 RUN pnpm --filter @repo/agents build
 
 # ── Production ───────────────────────────────────────────────────────
-FROM docker.io/node:22.14-bookworm-slim AS runner
+FROM docker.io/node:22.23.3-bookworm-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
